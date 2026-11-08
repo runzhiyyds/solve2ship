@@ -1,0 +1,436 @@
+{
+  "schema_version": 1,
+  "application_packages": [],
+  "vendored_sources": [],
+  "development_actions": [
+    {
+      "name": "actions/checkout",
+      "version": "4.2.2",
+      "commit": "11bd71901bbe5b1630ceea73d27597364c9af683",
+      "license": "MIT",
+      "source": "https://github.com/actions/checkout/tree/v4.2.2",
+      "bundled": false
+    },
+    {
+      "name": "actions/setup-python",
+      "version": "5.6.0",
+      "commit": "a26af69be951a213d495a4c3e4e4022e16d87065",
+      "license": "MIT",
+      "source": "https://github.com/actions/setup-python/tree/v5.6.0",
+      "bundled": false
+    },
+    {
+      "name": "actions/setup-node",
+      "version": "4.4.0",
+      "commit": "49933ea5288caeca8642d1e84afbd3f7d6820020",
+      "license": "MIT",
+      "source": "https://github.com/actions/setup-node/tree/v4.4.0",
+      "bundled": false
+    }
+  ],
+  "repository_license": "Apache-2.0",
+  "runtime_observed": [
+    {
+      "name": "CPython",
+      "version": "3.13.3",
+      "license": "PSF-2.0",
+      "bundled": false,
+      "source": "https://docs.python.org/release/3.13.3/license.html",
+      "notes": "Additional incorporated notices apply"
+    },
+    {
+      "name": "SQLite",
+      "version": "3.49.1",
+      "license": "Public domain",
+      "bundled": false,
+      "source": "https://www.sqlite.org/copyright.html",
+      "notes": "Not an SPDX license expression"
+    },
+    {
+      "name": "Node.js",
+      "version": "24.14.1",
+      "license": "MIT",
+      "bundled": false,
+      "source": "https://github.com/nodejs/node/blob/v24.14.1/LICENSE",
+      "notes": "Test tooling only; additional incorporated notices apply"
+    },
+    {
+      "name": "Docker Desktop",
+      "version": "4.98.0 (245422)",
+      "engine_version": "29.9.2",
+      "license": "Docker Subscription Service Agreement; incorporated components retain their individual licenses",
+      "source": "https://docs.docker.com/subscription/desktop-license/",
+      "bundled": false,
+      "notes": "Owner-installed local runtime; no Desktop binary redistributed. Engine API v1.45 over local Unix socket; actual engine supports v1.56."
+    }
+  ],
+  "copyright_holder": "郭辰远 (Chenyuan Guo)",
+  "copyright_year": 2026,
+  "license_approved_by_owner": true,
+  "license_source": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+  "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "container_images": [
+    {
+      "name": "docker.io/library/python",
+      "version": "3.13.18-slim-trixie",
+      "index_digest": "sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90",
+      "platform_digest": "sha256:7e9b0661d175b176a592d3969ccaf702c11b6769a485fa8b0d3769dd07bf1720",
+      "platform": "linux/arm64",
+      "reference": "python@sha256:7e9b0661d175b176a592d3969ccaf702c11b6769a485fa8b0d3769dd07bf1720",
+      "source_commit": "152874b138f0b1c4699fbdcb52b174608cfbfff5",
+      "source": "https://github.com/docker-library/python/tree/152874b138f0b1c4699fbdcb52b174608cfbfff5/3.13/slim-trixie",
+      "licenses": {
+        "recipe": "MIT",
+        "python": "PSF-2.0 plus incorporated notices",
+        "base_distribution": "Debian trixie: individual package licenses"
+      },
+      "use": "local isolated execution and local service build",
+      "distribution_duties": [
+        "retain Python and Debian package copyright/license files",
+        "inventory exact installed package versions",
+        "review corresponding-source duties before redistributing image archives"
+      ],
+      "image_archive_redistribution_approved": false,
+      "reviewed_date": "2026-11-08"
+    },
+    {
+      "name": "sts-sklearn-local",
+      "runtime_id": "sklearn",
+      "version": "1.9.1",
+      "reference": "sha256:c4446bc482b5f0dd098f79a5f819a3f84717048113d975cf790a37c0d3e99e49",
+      "base_image": "python@sha256:7e9b0661d175b176a592d3969ccaf702c11b6769a485fa8b0d3769dd07bf1720",
+      "platform": "linux/arm64",
+      "source": "workspace-authored runtimes/sklearn/Dockerfile and requirements.lock; PyPI wheel sources in container_python_packages",
+      "recipe_sha256": "75e8815465780d26ed5cc313dd5873b58b23658d08b726feed8a48e05e469dc7",
+      "requirements_sha256": "29d065942e25fd54eea9b0ed789f3e8f40f17518f4a8be1bef44181b825c6561",
+      "licenses": {
+        "python_packages": "individual exact wheel metadata and native notices",
+        "base_distribution": "retain Python and Debian notices"
+      },
+      "distribution_duties": [
+        "retain all installed wheel copyright/license files including OpenBLAS and GCC runtime exception notices",
+        "no image archive or registry publishing without separate corresponding-source review"
+      ],
+      "image_archive_redistribution_approved": false,
+      "reviewed_date": "2026-11-08"
+    }
+  ],
+  "container_python_packages": [
+    {
+      "name": "scikit-learn",
+      "version": "1.9.1",
+      "license_expression": "BSD-3-Clause",
+      "source": "https://pypi.org/pypi/scikit-learn/1.9.1/json",
+      "wheel_filename": "scikit_learn-1.9.1-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+      "wheel_url": "https://files.pythonhosted.org/packages/0f/35/a15b8653499692879821301d48059376d6e68e8b65cd0f22d19b6ee83cd9/scikit_learn-1.9.1-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+      "sha256": "5990f9c69e431bfaddcde1a6d7c5355243e026bc9b9e560c13893b90dab53fb4",
+      "requires_dist": [
+        "numpy>=1.24.1",
+        "scipy>=1.10.0",
+        "joblib>=1.4.0",
+        "narwhals>=2.0.1",
+        "threadpoolctl>=3.5.0"
+      ],
+      "installation_scope": "isolated ML image only; not host/control plane",
+      "distribution_duties": [
+        "retain upstream copyright/license files and bundled native-library notices",
+        "no blanket Apache-2.0 relicensing",
+        "review runtime-image redistribution separately"
+      ],
+      "license_files": [
+        {
+          "path": "scikit_learn-1.9.1.dist-info/licenses/COPYING",
+          "sha256": "8752dfe82d4a768e76ee309b202e7b33906d1ea9004d68cc61564391cc6b1a96"
+        }
+      ],
+      "local_use_review": "reviewed pinned wheel and accompanying notices; no host install or image archive redistribution",
+      "additional_notice_scope": "Bundled native code includes additional BSD/OpenBLAS/LAPACK/GCC runtime exception notices; retain full wheel license files. Top-level SPDX expression does not certify every binary component."
+    },
+    {
+      "name": "numpy",
+      "version": "2.5.4",
+      "license_expression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "source": "https://pypi.org/pypi/numpy/2.5.4/json",
+      "wheel_filename": "numpy-2.5.4-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+      "wheel_url": "https://files.pythonhosted.org/packages/db/b6/135bb0953b61dc21c6cafa14b424ae666944e4899cf140e00c2b322a1a45/numpy-2.5.4-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+      "sha256": "1c2e71b04c6cad90026e544501bbe0ab9290fa8a4d845e7e8c0d124fb429c988",
+      "requires_dist": [],
+      "installation_scope": "isolated ML image only; not host/control plane",
+      "distribution_duties": [
+        "retain upstream copyright/license files and bundled native-library notices",
+        "no blanket Apache-2.0 relicensing",
+        "review runtime-image redistribution separately"
+      ],
+      "license_files": [
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/LICENSE.txt",
+          "sha256": "4860083caa0de2ac3292ca98bd074bd8f45d8b32624e37b1e70a240bff61e488"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt",
+          "sha256": "fbc539f47d0cf83bc61378080fb873d5c14630126cacbfe754035c3926daa5ec"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING",
+          "sha256": "3f2c1ffa76383a55ae0aac01c9737cd70050dff63e1f026694fbe9d662573c98"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/src/highway/LICENSE",
+          "sha256": "e340270d4f64384569a91d546acb5b094d69ce47f0c015db77abb74dc6f815af"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/src/multiarray/dragon4_LICENSE.txt",
+          "sha256": "f7b14309e5f54e5022b26448eefd419988ada2aec01d3c1162d84a0ea8f21f2c"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md",
+          "sha256": "211e7d737d6179a08f791ebb0a99897ce7cd2457410c542876d125576edfe910"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/_core/src/umath/svml/LICENSE",
+          "sha256": "c17011467b4fe6e20fbfbeda4df09e58c2bca5480a063e55735a4000a379aad9"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/fft/pocketfft/LICENSE.md",
+          "sha256": "a85ca13fdf90160b64a0698215868c13b74d835ad0a4e2ba44713b8c5058a056"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/linalg/lapack_lite/LICENSE.txt",
+          "sha256": "a14cc25e10d40a3aa705b7de2fb764a6535d8ee9b2db4e1724900585457dfd55"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/ma/LICENSE",
+          "sha256": "05f3b88351988ecfad10abe92c0c50e5875c6452d5009a0084cc291551ffcca6"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/LICENSE.md",
+          "sha256": "103166b62b80443afb9eb3488e052ea06be0cff566b908f199e561fde49af19f"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/distributions/LICENSE.md",
+          "sha256": "469778be8f33d54e1bcaab28c281cc472916d2d273f835e55bc487d30503face"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/mt19937/LICENSE.md",
+          "sha256": "0e111337b25494a773106695f0e799f642b8567aaacca4f116a74a8177179156"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/pcg64/LICENSE.md",
+          "sha256": "e7d4f4fb20358f314210a892ae17351e04993813646f697ec387385ca2a36918"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/philox/LICENSE.md",
+          "sha256": "6f5828a57223d4cc7f8ea505a2623e7b978b242752c1515e355f46ba2cec1800"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/sfc64/LICENSE.md",
+          "sha256": "9d4098846018319cd68e228ee6220361787f73bccbf00237a85e4fc9621b998f"
+        },
+        {
+          "path": "numpy-2.5.4.dist-info/licenses/numpy/random/src/splitmix64/LICENSE.md",
+          "sha256": "268b0ca06759d31ea3ca68dd35f20e877916e927b1c2a835e4592a3c4354b1f9"
+        }
+      ],
+      "local_use_review": "reviewed pinned wheel and accompanying notices; no host install or image archive redistribution",
+      "additional_notice_scope": "Bundled native code includes additional BSD/OpenBLAS/LAPACK/GCC runtime exception notices; retain full wheel license files. Top-level SPDX expression does not certify every binary component."
+    },
+    {
+      "name": "scipy",
+      "version": "1.18.1",
+      "license_expression": "BSD-3-Clause plus bundled notices (review wheel license files)",
+      "source": "https://pypi.org/pypi/scipy/1.18.1/json",
+      "wheel_filename": "scipy-1.18.1-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+      "wheel_url": "https://files.pythonhosted.org/packages/e6/5f/4634e9d35c68496e4e34cb6946eafab044458e6cedab42b40b6588e475b6/scipy-1.18.1-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+      "sha256": "d416b16cccfd70fbf62400e84d0bb2f4e6af519a45557f1692c749b37f14b315",
+      "requires_dist": [
+        "numpy<2.8,>=2.0.0",
+        "pytest>=8.0.0; extra == \"test\"",
+        "pytest-cov; extra == \"test\"",
+        "pytest-timeout; extra == \"test\"",
+        "pytest-xdist; extra == \"test\"",
+        "asv; extra == \"test\"",
+        "mpmath; extra == \"test\"",
+        "gmpy2; extra == \"test\"",
+        "threadpoolctl; extra == \"test\"",
+        "scikit-umfpack; extra == \"test\"",
+        "pooch; extra == \"test\"",
+        "hypothesis>=6.30; extra == \"test\"",
+        "array-api-strict>=2.3.1; extra == \"test\"",
+        "Cython; extra == \"test\"",
+        "meson; extra == \"test\"",
+        "ninja; sys_platform != \"emscripten\" and extra == \"test\"",
+        "scipy-doctest>=2.0.0; extra == \"test\"",
+        "sphinx<8.2.0,>=5.0.0; extra == \"doc\"",
+        "intersphinx_registry; extra == \"doc\"",
+        "pydata-sphinx-theme>=0.15.2; extra == \"doc\"",
+        "sphinx-copybutton; extra == \"doc\"",
+        "sphinx-design>=0.4.0; extra == \"doc\"",
+        "matplotlib>=3.5; extra == \"doc\"",
+        "numpydoc; extra == \"doc\"",
+        "jupytext; extra == \"doc\"",
+        "myst-nb>=1.2.0; extra == \"doc\"",
+        "pooch; extra == \"doc\"",
+        "jupyterlite-sphinx>=0.19.1; extra == \"doc\"",
+        "jupyterlite-pyodide-kernel; extra == \"doc\"",
+        "linkify-it-py; extra == \"doc\"",
+        "tabulate; extra == \"doc\"",
+        "click<8.3.0; extra == \"dev\"",
+        "spin; extra == \"dev\"",
+        "mypy==1.19.1; extra == \"dev\"",
+        "pyrefly==0.63.0; extra == \"dev\"",
+        "typing_extensions; extra == \"dev\"",
+        "types-psutil; extra == \"dev\"",
+        "pycodestyle; extra == \"dev\"",
+        "ruff>=0.12.0; extra == \"dev\"",
+        "cython-lint>=0.12.2; extra == \"dev\""
+      ],
+      "installation_scope": "isolated ML image only; not host/control plane",
+      "distribution_duties": [
+        "retain upstream copyright/license files and bundled native-library notices",
+        "no blanket Apache-2.0 relicensing",
+        "review runtime-image redistribution separately"
+      ],
+      "license_files": [
+        {
+          "path": "scipy-1.18.1.dist-info/LICENSE.txt",
+          "sha256": "17e7db9ffa4913121fa2df484633a362456a482da736c99db4711a98473770ea"
+        }
+      ],
+      "local_use_review": "reviewed pinned wheel and accompanying notices; no host install or image archive redistribution",
+      "additional_notice_scope": "Bundled native code includes additional BSD/OpenBLAS/LAPACK/GCC runtime exception notices; retain full wheel license files. Top-level SPDX expression does not certify every binary component."
+    },
+    {
+      "name": "narwhals",
+      "version": "2.28.0",
+      "license_expression": "MIT",
+      "source": "https://pypi.org/pypi/narwhals/2.28.0/json",
+      "wheel_filename": "narwhals-2.28.0-py3-none-any.whl",
+      "wheel_url": "https://files.pythonhosted.org/packages/cf/82/8ef9c7e0f50493307a49c09cfa7f00c5a778b6d1921f7b2dabe1d3a5809e/narwhals-2.28.0-py3-none-any.whl",
+      "sha256": "1f69d6385ec30e2fa6e1fdeb37c562ecabd0f713f6f3e3b58a668c5c9df9567f",
+      "requires_dist": [
+        "cudf-cu12>=24.10.0; sys_platform == \"linux\" and extra == \"cudf\"",
+        "dask[dataframe]>=2024.8; extra == \"dask\"",
+        "duckdb>=1.1; extra == \"duckdb\"",
+        "ibis-framework>=6.0.0; extra == \"ibis\"",
+        "packaging>=21.3; extra == \"ibis\"",
+        "pyarrow-hotfix>=0.7; extra == \"ibis\"",
+        "modin>=0.22.0; extra == \"modin\"",
+        "pandas>=1.3.4; extra == \"pandas\"",
+        "polars>=0.20.4; extra == \"polars\"",
+        "pyarrow>=13.0.0; extra == \"pyarrow\"",
+        "pyspark>=3.5.0; extra == \"pyspark\"",
+        "pyspark[connect]>=3.5.0; extra == \"pyspark-connect\"",
+        "narwhals[duckdb]; extra == \"sql\"",
+        "sqlparse>=0.5.5; extra == \"sql\"",
+        "sqlframe!=3.39.3,>=3.22.0; extra == \"sqlframe\""
+      ],
+      "installation_scope": "isolated ML image only; not host/control plane",
+      "distribution_duties": [
+        "retain upstream copyright/license files and bundled native-library notices",
+        "no blanket Apache-2.0 relicensing",
+        "review runtime-image redistribution separately"
+      ],
+      "license_files": [
+        {
+          "path": "narwhals-2.28.0.dist-info/licenses/LICENSE.md",
+          "sha256": "811445f30147b8f0c9d444c9025fd528f9532c54b7b83f6e2368473dc91cfdf0"
+        }
+      ],
+      "local_use_review": "reviewed pinned wheel and accompanying notices; no host install or image archive redistribution"
+    },
+    {
+      "name": "joblib",
+      "version": "1.6.0",
+      "license_expression": "BSD-3-Clause",
+      "source": "https://pypi.org/pypi/joblib/1.6.0/json",
+      "wheel_filename": "joblib-1.6.0-py3-none-any.whl",
+      "wheel_url": "https://files.pythonhosted.org/packages/18/53/84099323c2ec4be98d935f63c033ac4151ee83836ca1050ede3b3aadf155/joblib-1.6.0-py3-none-any.whl",
+      "sha256": "3dbbf9f6e4b592a2357b854608e980fe6390d131d7a82f011a377ef2ebef7aba",
+      "requires_dist": [
+        "cloudpickle>=3.0",
+        "distributed; extra == \"test\"",
+        "lz4; extra == \"test\"",
+        "numpy; extra == \"test\"",
+        "memory_profiler; extra == \"test\"",
+        "pytest; extra == \"test\"",
+        "pytest-asyncio; extra == \"test\"",
+        "pytest-cov; extra == \"test\"",
+        "pytest-run-parallel; extra == \"test\"",
+        "pytest-timeout; extra == \"test\"",
+        "threadpoolctl; extra == \"test\"",
+        "distributed; extra == \"docs\"",
+        "lz4; extra == \"docs\"",
+        "numpy; extra == \"docs\"",
+        "numpydoc; extra == \"docs\"",
+        "matplotlib; extra == \"docs\"",
+        "pandas; extra == \"docs\"",
+        "psutil; extra == \"docs\"",
+        "sphinx; extra == \"docs\"",
+        "pydata-sphinx-theme; extra == \"docs\"",
+        "sphinx-gallery; extra == \"docs\"",
+        "sphinx-copybutton; extra == \"docs\"",
+        "sphinx-design; extra == \"docs\"",
+        "tqdm; extra == \"docs\""
+      ],
+      "installation_scope": "isolated ML image only; not host/control plane",
+      "distribution_duties": [
+        "retain upstream copyright/license files and bundled native-library notices",
+        "no blanket Apache-2.0 relicensing",
+        "review runtime-image redistribution separately"
+      ],
+      "license_files": [
+        {
+          "path": "joblib-1.6.0.dist-info/licenses/LICENSE.txt",
+          "sha256": "42612911c1872c5e4b43f6ae0e8ee59467cd350332241cf72ce90640264fae6a"
+        }
+      ],
+      "local_use_review": "reviewed pinned wheel and accompanying notices; no host install or image archive redistribution"
+    },
+    {
+      "name": "threadpoolctl",
+      "version": "3.8.0",
+      "license_expression": "BSD-3-Clause",
+      "source": "https://pypi.org/pypi/threadpoolctl/3.8.0/json",
+      "wheel_filename": "threadpoolctl-3.8.0-py3-none-any.whl",
+      "wheel_url": "https://files.pythonhosted.org/packages/54/1b/831f2de4840a25db1dd7b1afea433ccafe6bb10aca07e13264f2079462d0/threadpoolctl-3.8.0-py3-none-any.whl",
+      "sha256": "f1b49c82704d50f13ffae019c727b0fa4f6791a58f48f06a09c45face1be66da",
+      "requires_dist": [],
+      "installation_scope": "isolated ML image only; not host/control plane",
+      "distribution_duties": [
+        "retain upstream copyright/license files and bundled native-library notices",
+        "no blanket Apache-2.0 relicensing",
+        "review runtime-image redistribution separately"
+      ],
+      "license_files": [
+        {
+          "path": "threadpoolctl-3.8.0.dist-info/licenses/LICENSE",
+          "sha256": "ecd5f3320c3064582c4ebd53e413d8cd3ee5bb85f039e4137a3e9d3497a43cd4"
+        }
+      ],
+      "local_use_review": "reviewed pinned wheel and accompanying notices; no host install or image archive redistribution"
+    },
+    {
+      "name": "cloudpickle",
+      "version": "3.1.2",
+      "license_expression": "BSD-3-Clause plus bundled notices (review wheel license files)",
+      "source": "https://pypi.org/pypi/cloudpickle/3.1.2/json",
+      "wheel_filename": "cloudpickle-3.1.2-py3-none-any.whl",
+      "wheel_url": "https://files.pythonhosted.org/packages/88/39/799be3f2f0f38cc727ee3b4f1445fe6d5e4133064ec2e4115069418a5bb6/cloudpickle-3.1.2-py3-none-any.whl",
+      "sha256": "9acb47f6afd73f60dc1df93bb801b472f05ff42fa6c84167d25cb206be1fbf4a",
+      "requires_dist": [],
+      "installation_scope": "isolated ML image only; not host/control plane",
+      "distribution_duties": [
+        "retain upstream copyright/license files and bundled native-library notices",
+        "no blanket Apache-2.0 relicensing",
+        "review runtime-image redistribution separately"
+      ],
+      "license_files": [
+        {
+          "path": "cloudpickle-3.1.2.dist-info/licenses/LICENSE",
+          "sha256": "3029ea34173e9fdc233ad315dc6b100bd1ea71f529b1c1af97664a272fdc55f5"
+        }
+      ],
+      "local_use_review": "reviewed pinned wheel and accompanying notices; no host install or image archive redistribution"
+    }
+  ]
+}

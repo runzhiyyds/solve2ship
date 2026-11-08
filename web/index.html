@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Solve2Ship</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.mjs"></script>
+</head>
+<body>
+  <header><a class="brand" href="/">STS<span>Solve2Ship</span></a><button id="settings" aria-controls="settings-panel" aria-expanded="false" data-i18n="settings">Settings</button></header>
+  <section id="settings-panel" class="settings" hidden>
+    <label for="language" data-i18n="language">Language</label>
+    <select id="language"><option value="en-US">English</option><option value="zh-CN">简体中文</option></select>
+  </section>
+  <main>
+    <p class="eyebrow" data-i18n="milestone">M1 / DESCRIBE</p>
+    <h1 data-i18n="headline">Define the outcome.<br>Let solutions compete.<br>Ship the best.</h1>
+    <p class="intro" data-i18n="intro">Bring your samples. Describe what success looks like.</p>
+    <section class="panel task-entry">
+      <div class="section-top"><h2 id="form-heading" data-i18n="defineTask">Define your task</h2><button id="new-task" type="button" hidden data-i18n="newTask">New task</button></div>
+      <form id="task-form">
+        <fieldset id="task-fields">
+          <label for="task-title" data-i18n="taskTitle">Name (optional)</label>
+          <input id="task-title" maxlength="120" autocomplete="off">
+          <div class="field-header"><label for="task-samples" data-i18n="samplesLabel">Input samples</label><label class="file-button" for="sample-file" data-i18n="importFile">Import JSON / JSONL</label><input id="sample-file" type="file" accept=".json,.jsonl,.ndjson,application/json"></div>
+          <textarea id="task-samples" rows="5" required spellcheck="false" aria-describedby="samples-help" placeholder='["First input", "Second input"]'></textarea>
+          <div class="field-header"><label for="sample-format" data-i18n="sampleFormat">Format</label><select id="sample-format"><option value="json">JSON</option><option value="jsonl">JSONL</option></select></div>
+          <p id="samples-help" class="field-help" data-i18n="samplesHelp">JSON: an array of input values. JSONL: one input per line. Up to 500 samples; labels are optional.</p>
+          <label for="task-goal" data-i18n="goalLabel">What should the output be?</label>
+          <textarea id="task-goal" rows="3" maxlength="20000" required aria-describedby="goal-help"></textarea>
+          <p id="goal-help" class="field-help" data-i18n="goalHelp">Describe the desired output and success criteria in your own words. No workflow needed.</p>
+          <details id="advanced-task"><summary data-i18n="optionalSettings">Labels, constraints & preferences (optional)</summary>
+            <label for="task-labels" data-i18n="labelsLabel">Sample labels (JSON)</label>
+            <textarea id="task-labels" rows="3" spellcheck="false" placeholder='[{"sample_index":0,"expected_output":"your answer"}]'></textarea>
+            <p class="field-help" data-i18n="labelsHelp">Use zero-based sample_index and expected_output. Omitted labels differ from an explicit null answer. Labels are user-provided and unverified.</p>
+            <label for="task-hard" data-i18n="hardLabel">Hard constraints — one per line</label><textarea id="task-hard" rows="2"></textarea>
+            <label for="task-soft" data-i18n="softLabel">Soft preferences — one per line</label><textarea id="task-soft" rows="2"></textarea>
+            <label for="task-tech" data-i18n="techLabel">Technical preferences — one per line</label><textarea id="task-tech" rows="2"></textarea>
+            <label for="task-resources" data-i18n="resourcesLabel">Available tools / resources — descriptions only</label><textarea id="task-resources" rows="2"></textarea>
+            <label class="checkbox-row"><input id="inherit-budget" type="checkbox" checked><span data-i18n="inheritBudget">Use the authorized shared work budget</span></label>
+            <div id="budget-fields" class="budget-fields" hidden><div><label for="task-cost" data-i18n="costLabel">Search cost ceiling (CNY)</label><input id="task-cost" type="number" min="0" max="1000000" step="any" value="0"></div><div><label for="task-executions" data-i18n="executionsLabel">Candidate execution limit</label><input id="task-executions" type="number" min="0" max="100000" step="1" value="0"></div></div>
+            <p class="field-help" data-i18n="budgetHelp">These declarations are saved for future search. No execution or spending starts in M1; limits default to zero.</p>
+          </details>
+          <p class="field-help" data-i18n="localData">Task data is stored locally in this workspace. Do not include API keys.</p>
+          <button id="preview-task" class="primary" type="submit" data-i18n="previewTask">Review task contract</button>
+        </fieldset>
+      </form>
+      <p id="task-message" role="status" aria-live="polite"></p>
+    </section>
+    <section id="task-review" class="panel" hidden>
+      <div class="section-top"><h2 id="review-heading" tabindex="-1"></h2><button id="edit-task" hidden data-i18n="editTask">Edit as new revision</button></div>
+      <p id="contract-summary"></p><p id="contract-goal"></p>
+      <p class="scope" data-i18n="contractScope">Your goal is preserved as written. Output schema and evaluation rules remain unconfirmed. Saving does not start solution exploration.</p>
+      <ul id="contract-unknowns" class="unknowns"></ul>
+      <div class="field-header" id="revision-picker" hidden><label for="task-revision" data-i18n="revisionLabel">Revision</label><select id="task-revision"></select></div>
+      <details><summary data-i18n="contractEvidence">View full contract and content hash</summary><pre id="contract-json"></pre></details>
+      <button id="save-task" class="primary" hidden data-i18n="saveTask">Save reviewed contract</button>
+    </section>
+    <section class="history"><div class="section-top"><h2 data-i18n="savedTasks">Saved tasks</h2><button id="refresh-tasks" data-i18n="refreshTasks">Refresh</button></div><p id="tasks-empty" class="field-help" data-i18n="tasksEmpty">No tasks yet. Add samples and a goal to create your first contract.</p><ul id="tasks"></ul></section>
+    <section id="search-section" class="panel" hidden>
+      <div class="section-top"><h2 data-i18n="exploreTitle">Explore executable solutions</h2><button id="start-search" class="primary" data-i18n="startSearch">Build and try candidates</button></div>
+      <p id="search-hint" class="field-help"></p><p id="work-budget" class="field-help"></p><p id="search-message" role="status"></p><ul id="searches"></ul>
+      <div id="search-detail" hidden><div class="section-top"><p id="search-summary"></p><button id="cancel-search" data-i18n="cancelSearch">Cancel exploration</button></div><p id="search-error" class="field-help"></p><p id="selection-summary" class="field-help"></p><button id="rollback-search" hidden data-i18n="rollbackSearch">Restore this archived leader and retest</button><section id="delivery-section" hidden><button id="prepare-delivery" data-i18n="prepareDelivery">Freeze leader and check final holdout</button><p class="field-help" data-i18n="deliveryScope">One-time final checks freeze this data for further search. Private local draft only; license review required.</p><p id="delivery-status" role="status"></p><p id="delivery-metrics" class="field-help"></p><button id="export-service" hidden data-i18n="exportService">Export local service bundle</button><a id="download-service" hidden data-i18n="downloadService">Download service ZIP</a><details><summary data-i18n="deliveryEvidence">View final checks and service draft</summary><pre id="delivery-json"></pre></details></section><details id="search-structure"><summary data-i18n="structureDetails">View competition and revision history</summary><h3 data-i18n="searchFunnel">Search Funnel</h3><ol id="search-funnel"></ol><h3 data-i18n="evolutionGraph">Evolution Graph</h3><p class="field-help" data-i18n="graphLegend">Changed artifacts and frozen retests are distinct.</p><div id="evolution-graph"></div></details><ul id="candidate-results"></ul><div id="mutation-diffs"></div><details><summary data-i18n="searchEvidence">View artifacts, outputs and billing evidence</summary><pre id="search-json"></pre></details></div>
+    </section>
+    <details class="foundation"><summary data-i18n="localDiagnostics">Local diagnostics</summary>
+    <section class="panel">
+      <div class="section-top"><div><h2 data-i18n="checkTitle">Check your foundation</h2><p data-i18n="checkDescription">Verify local storage and runtime. Results and task history survive a restart.</p></div><button id="create" class="primary" data-i18n="run">Run foundation check</button></div>
+      <p class="scope" data-i18n="scope">Infrastructure diagnostics only. Solution exploration, optimization and service export are planned.</p>
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+    <section class="history"><div class="section-top"><h2 data-i18n="history">Recent checks</h2><span data-i18n="local">LOCAL · SQLITE</span></div><p id="empty" data-i18n="empty">No checks yet. Run one to verify the foundation.</p><ul id="jobs"></ul></section>
+    <section id="detail-panel" class="panel" hidden><div class="section-top"><h2 data-i18n="evidence">Check details</h2><button id="cancel" data-i18n="cancel">Cancel check</button></div><p id="selected-id"></p><details><summary data-i18n="showEvidence">View recorded evidence and events</summary><pre id="detail"></pre></details></section>
+    </details>
+  </main>
+  <footer data-i18n="footer">Solve2Ship · Local development preview · M1 Describe</footer>
+</body>
+</html>
