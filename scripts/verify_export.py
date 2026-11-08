@@ -24,7 +24,7 @@ from solve2ship.store import Store
 from verify_service import verify as verify_native
 
 
-def verify(store,delivery_id):
+def verify(store,delivery_id,service_grant_id=None):
     export=export_service(store,delivery_id)
     local_http=build_opener(ProxyHandler({}))
     if not export['archive_integrity_verified']:
@@ -48,6 +48,12 @@ def verify(store,delivery_id):
         repository=DeliveryRepository(store);delivery=repository.get(delivery_id)
         source=repository.searches.get(delivery['search_id']);task=repository.searches.tasks.get_revision(source['task_id'],source['revision'])
         cases=[row for row in source['executions'] if row['candidate_id']==delivery['candidate_id'] and row['error'] is None and row['split']=='validation']
+        from solve2ship.candidates import model_required
+        if model_required(delivery['frozen']['candidate']['family'],delivery['frozen']['candidate']['artifact']):
+            if service_grant_id is None:raise ValueError('explicit_service_grant_required_for_paid_verification')
+            from verify_model_service import verify as verify_model
+            proof=verify_model(store,delivery_id,service_grant_id,package)
+            return {**proof,'export_id':export['id'],'archive_sha256':export['archive_sha256'],'delivery_id':delivery_id,'publicly_published':False}
         if delivery['frozen']['candidate']['family']!='rules.v1':
             original=json.loads((Path(delivery['draft_path'])/'manifest.json').read_text())
             proof=verify_native(package,[{'input':task['contract']['definition']['samples'][row['sample_index']],'expected_output':row['output']} for row in cases],
@@ -94,10 +100,11 @@ def verify(store,delivery_id):
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('delivery_id');parser.add_argument('--db',type=Path,default=ROOT/'.sts/state.sqlite3')
     parser.add_argument('--evidence-name',help='Separate evidence filename for a new milestone; preserve historical proofs')
+    parser.add_argument('--service-grant',help='Explicit existing allowance ID for paid model verification')
     args=parser.parse_args()
     if args.evidence_name and (Path(args.evidence_name).name!=args.evidence_name or not args.evidence_name.endswith('.json')):
         parser.error('Evidence must be a JSON filename without a directory')
-    result=verify(Store(args.db),args.delivery_id)
+    result=verify(Store(args.db),args.delivery_id,args.service_grant)
     family=DeliveryRepository(Store(args.db)).get(args.delivery_id)['frozen']['candidate']['family']
     evidence=('M7-workflow-service-proof.json' if family=='workflow.v1' else
               'M7-ML-service-proof.json' if family=='sklearn.classifier.v1' else

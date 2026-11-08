@@ -11,7 +11,7 @@ import uuid
 
 
 TERMINAL = {"succeeded", "failed", "cancelled"}
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 12
 
 
 class Store:
@@ -266,6 +266,17 @@ class Store:
                         CREATE TRIGGER export_versions_no_delete BEFORE DELETE ON service_export_versions
                         BEGIN SELECT RAISE(ABORT,'export versions are immutable'); END;
                         PRAGMA user_version=11;
+                    """)
+                    version = 11
+                if version == 11:
+                    self.migrate(db,"""
+                        CREATE TABLE service_budget_grants(id TEXT PRIMARY KEY,delivery_id TEXT NOT NULL UNIQUE REFERENCES deliveries(id),
+                            root_id TEXT NOT NULL,created_at REAL NOT NULL,amount_micro INTEGER NOT NULL CHECK(amount_micro>0));
+                        CREATE TRIGGER grants_no_update BEFORE UPDATE ON service_budget_grants
+                        BEGIN SELECT RAISE(ABORT,'service allowances are immutable'); END;
+                        CREATE TRIGGER grants_no_delete BEFORE DELETE ON service_budget_grants
+                        BEGIN SELECT RAISE(ABORT,'service allowances are immutable'); END;
+                        PRAGMA user_version=12;
                     """)
                 db.commit()
             except BaseException:

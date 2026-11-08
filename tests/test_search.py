@@ -155,6 +155,7 @@ class BillingTests(unittest.TestCase):
             db.execute('ALTER TABLE executions DROP COLUMN runtime_json')
             db.execute('DROP TABLE service_exports')
             db.execute('DROP TABLE service_export_versions')
+            db.execute('DROP TABLE service_budget_grants')
             db.execute('PRAGMA user_version=8')
         migrated = Ledger(Store(self.path))
         status = migrated.status()

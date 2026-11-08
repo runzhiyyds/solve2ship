@@ -7,6 +7,14 @@ class ArtifactError(ValueError):
     pass
 
 
+def model_required(family,artifact):
+    if family in ('prompt.v1','hybrid.v1'):return True
+    if family=='workflow.v1':
+        from .workflow_adapter import requires_model
+        return requires_model(artifact)
+    return False
+
+
 def validate_rules(artifact):
     if type(artifact) is not dict or artifact.keys() != {'rules', 'default'} or type(artifact['rules']) is not list or len(artifact['rules']) > 32:
         raise ArtifactError('invalid_rule_artifact')

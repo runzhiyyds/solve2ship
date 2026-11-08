@@ -63,7 +63,7 @@ export function initializeSearch({ api, t, taskUI, renderRoot }) {
     $('start-search').disabled = pending || !valid;
     $('search-hint').textContent = t(delivery ? 'finalConsumed' : valid ? 'searchScope' : 'searchBudgetHint');
     $('search-message').textContent = errorText(t,message);
-    $('work-budget').textContent = budget ? `${t('workBudget')}: ¥${budget.committed_ceiling_cny.toFixed(6)} / ¥${budget.limit_cny} ${t('ceilingEstimate')}` : '';
+    $('work-budget').textContent = budget ? `${t('workBudget')}: ¥${budget.committed_ceiling_cny.toFixed(6)} / ¥${budget.limit_cny} ${t('ceilingEstimate')}${budget.delegated_ceiling_cny?` · ${t('serviceAllowance')}: ¥${budget.delegated_ceiling_cny.toFixed(2)}`:''}` : '';
     const visible = selected && selected.task_id === task?.task_id;
     $('search-detail').hidden = !visible;
     $('cancel-search').hidden = !visible || !['queued', 'running'].includes(selected.state);
@@ -74,10 +74,10 @@ export function initializeSearch({ api, t, taskUI, renderRoot }) {
       $('search-error').textContent = selected.error ? `${t('searchStoppedError')} ${errorText(t,selected.error)}` : '';
       $('selection-summary').textContent = selected.selection ? `${t(selected.selection.evidence.status)} · ${t(selected.selection.evidence.basis)} · ${t(delivery ? 'finalConsumed' : 'finalSealed')}` : '';
       const winner = selected.candidates.find((row) => row.id === selected.selection?.candidate_id);
-      const needsModelServing=winner?.family==='workflow.v1' && winner.artifact.steps.some(step=>step.family==='prompt.v1');
-      $('delivery-section').hidden = selected.state !== 'succeeded' || !['rules.v1','python.v1','sklearn.classifier.v1','workflow.v1'].includes(winner?.family);
-      $('prepare-delivery').disabled = pending || !!delivery || needsModelServing;
-      $('delivery-status').textContent = delivery ? t(delivery.export?.archive_integrity_verified ? 'local_export_ready' : delivery.state) : needsModelServing?t('model_backed_serving_runtime_required'):'';
+      const needsModelServing=['prompt.v1','hybrid.v1'].includes(winner?.family)||(winner?.family==='workflow.v1' && winner.artifact.steps.some(step=>step.family==='prompt.v1'));
+      $('delivery-section').hidden = selected.state !== 'succeeded' || !['rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1'].includes(winner?.family);
+      $('prepare-delivery').disabled = pending || !!delivery;
+      $('delivery-status').textContent = delivery ? t(delivery.export?.archive_integrity_verified ? 'local_export_ready' : delivery.state) : needsModelServing?t('modelServingReady'):'';
       $('delivery-metrics').textContent = delivery?.report ? `${t('deliveryChecks')}: ${delivery.report.provided_label_matches}/${delivery.report.count}. ${t(delivery.draft_integrity_verified && delivery.proof?.status === 'passed' ? 'serviceVerified' : 'serviceNotVerified')}` : '';
       $('export-service').hidden = !delivery?.draft_integrity_verified || delivery?.proof?.status !== 'passed' || !!delivery?.export;
       $('export-service').disabled = pending;

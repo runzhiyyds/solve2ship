@@ -7,7 +7,7 @@ from pathlib import Path
 from socketserver import TCPServer
 import threading
 
-from .candidates import RulesAdapter, PythonAdapter, ArtifactError
+from .candidates import RulesAdapter, PythonAdapter,PromptAdapter,HybridAdapter,ArtifactError,model_required
 from .contracts import SandboxUnavailable
 from .contracts import canonical_json, sha256, strict_json_loads, validate_json
 
@@ -15,15 +15,18 @@ from .contracts import canonical_json, sha256, strict_json_loads, validate_json
 MAX_BYTES = 262144
 
 
-def create_service(candidate, port=9000, host='127.0.0.1', *, runtime_root=None):
-    if candidate.get('family') not in ('rules.v1','python.v1','sklearn.classifier.v1','workflow.v1') or sha256(candidate['artifact']) != candidate.get('artifact_sha256'):
+def create_service(candidate, port=9000, host='127.0.0.1', *, runtime_root=None,model_state=None,model_gateway=None):
+    if candidate.get('family') not in ('rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1') or sha256(candidate['artifact']) != candidate.get('artifact_sha256'):
         raise ValueError('unsupported_or_changed_artifact')
     if candidate['family']=='workflow.v1':
         from .workflow_adapter import WorkflowAdapter,requires_model
         WorkflowAdapter.validate(candidate['artifact'])
-        if requires_model(candidate['artifact']):raise ValueError('model_backed_serving_runtime_required')
+    needs_model=model_required(candidate['family'],candidate['artifact'])
+    if needs_model and (model_state is None or model_gateway is None):raise ValueError('service_model_configuration_required')
     if candidate['family'] == RulesAdapter.family:
         adapter = RulesAdapter()
+    elif candidate['family']=='prompt.v1':adapter=PromptAdapter()
+    elif candidate['family']=='hybrid.v1':adapter=HybridAdapter()
     else:
         from .docker_runtime import DockerSandbox
         root = Path(runtime_root or Path(__file__).resolve().parents[1])
@@ -81,8 +84,9 @@ def create_service(candidate, port=9000, host='127.0.0.1', *, runtime_root=None)
                                 'artifact_sha256': candidate['artifact_sha256'], 'family': candidate['family']})
             elif self.path == '/contract':
                 self.send(200, {'request': {'input': 'JSON value'}, 'response': {'result': 'JSON value'},
-                                'semantic_schema': 'unconfirmed', 'model_calls': False,
-                                'docker_required': candidate['family']!='rules.v1'})
+                                'semantic_schema': 'unconfirmed', 'model_calls': needs_model,
+                                'request_id_required':needs_model,'standalone_usage_database_required':needs_model,
+                                'docker_required': candidate['family'] in ('python.v1','workflow.v1','sklearn.classifier.v1')})
             else:
                 self.send(404, {'error': 'not_found'})
 
@@ -110,19 +114,28 @@ def create_service(candidate, port=9000, host='127.0.0.1', *, runtime_root=None)
                     raise ValueError()
                 body = strict_json_loads(raw)
                 validate_json(body)
-                if type(body) is not dict or body.keys() != {'input'}:
+                expected={'input','request_id'} if needs_model else {'input'}
+                if type(body) is not dict or body.keys() != expected:
                     raise ValueError()
                 if not capacity.acquire(blocking=False):
                     self.send(503, {'error':'service_capacity_reached'});return
                 try:
-                    output, _ = adapter.execute(candidate['artifact'], body['input'], None)
+                    if needs_model:output=model_state.predict(body['request_id'],body['input'],adapter,model_gateway)
+                    else:output, _ = adapter.execute(candidate['artifact'], body['input'], None)
                 finally:
                     capacity.release()
-            except (SandboxUnavailable,ArtifactError):
-                self.send(503, {'error':'isolated_runtime_unavailable'});return
-            except (ValueError, TypeError, UnicodeError, RecursionError):
-                self.send(422, {'error': 'invalid_predict_request'})
-                return
+            except Exception as error:
+                if needs_model:
+                    from .gateway import BudgetError,ProviderError
+                    from .service_model import RequestConflict
+                    if isinstance(error,RequestConflict):self.send(409,{'error':str(error)});return
+                    if isinstance(error,BudgetError):self.send(402,{'error':str(error)});return
+                    if isinstance(error,ProviderError):self.send(502,{'error':error.code});return
+                if isinstance(error,(SandboxUnavailable,ArtifactError)):
+                    self.send(503,{'error':'isolated_runtime_unavailable'});return
+                if isinstance(error,(ValueError,TypeError,UnicodeError,RecursionError)):
+                    self.send(422,{'error':'invalid_predict_request'});return
+                self.send(500,{'error':'service_request_failed'});return
             self.send(200, {'result': output})
 
     return Server((host, port), Handler)
@@ -132,10 +145,17 @@ def main():
     parser = argparse.ArgumentParser(description='Private standalone STS Rules service; not production hosting')
     parser.add_argument('--port', type=int, default=9000)
     parser.add_argument('--host', choices=['127.0.0.1', '0.0.0.0'], default='127.0.0.1')
+    parser.add_argument('--state-dir',type=Path,default=Path('.sts'))
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     candidate = json.loads((root / 'candidate.json').read_text())
-    server = create_service(candidate, args.port, args.host)
+    state,gateway=None,None
+    if model_required(candidate['family'],candidate['artifact']):
+        from .service_model import ServiceState
+        try:state=ServiceState(args.state_dir,candidate);gateway=state.gateway()
+        except (OSError,ValueError,RuntimeError):
+            parser.exit(1,'Configure an owner-only model profile and cumulative budget first / 请先配置仅所有者可读的模型连接和累计预算。\n')
+    server = create_service(candidate, args.port, args.host,model_state=state,model_gateway=gateway)
     print(canonical_json({'port': server.server_port, 'candidate_id': candidate['id'], 'standalone': True}), flush=True)
     try:
         server.serve_forever(poll_interval=0.1)

@@ -117,12 +117,12 @@ class ModelWorkflowTests(unittest.TestCase):
         with self.store.connection(write=True) as db:
             db.execute('INSERT INTO selections VALUES(?,?,?)',(self.search_id,cid,canonical_json({'status':'protocol_fixture'})))
         self.repository.finish(self.search_id,self.owner)
-        with self.assertRaisesRegex(DeliveryError,'model_backed_serving_runtime_required'):
+        with self.assertRaisesRegex(DeliveryError,'model_profile_required'):
             DeliveryRepository(self.store).prepare(self.search_id,uuid.uuid4().hex)
         with self.store.connection() as db:
             self.assertEqual(db.execute('SELECT count(*) FROM final_quarantine').fetchone()[0],0)
             self.assertEqual(db.execute('SELECT count(*) FROM deliveries').fetchone()[0],0)
-        with self.assertRaisesRegex(ValueError,'model_backed_serving_runtime_required'):
+        with self.assertRaisesRegex(ValueError,'service_model_configuration_required'):
             create_service({'id':cid,**candidate,'artifact_sha256':sha256(candidate['artifact'])},port=0)
         with self.assertRaisesRegex(ArtifactError,'model_gateway_required'):self.adapter.execute(workflow(),{},None)
         self.assertEqual(self.provider.calls,[])

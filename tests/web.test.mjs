@@ -57,4 +57,7 @@ test('missing call attribution is explicit and old single-call evidence remains 
   assert.equal(inferenceEvidence({call_id:'legacy'},[{id:'legacy',charged_micro:0,reserved_micro:2000000}]).ceilingCny,0);
   assert.deepEqual(inferenceEvidence({call_id:null,runtime:null},[]),{ids:[],complete:true,ceilingCny:0});
   assert.match(errorText(zh,'model_backed_serving_runtime_required'),/最终测试数据保持封存/);
+  assert.match(translate('zh-CN','modelServingReady'),/源码包不会携带密钥/);
+  assert.equal(translate('zh-CN','serviceAllowance'),'独立服务预留额度');
+  assert.match(errorText(zh,'service_request_not_replayable'),/不会自动重跑/);
 });

@@ -15,7 +15,13 @@ socket. This boundary is not a hardened public cloud isolation guarantee.
 
 Model calls reserve money first and never follow redirects/retry automatically.
 Unknown charges stay reserved. Workflow cancellation is checked between steps;
-in-flight requests cannot be undone. Raw user/model evidence remains untrusted data.
+in-flight requests cannot be undone. Standalone model services require their own
+owner-only profile and persistent usage DB, with no positive authorization embedded
+in exports. Keep request IDs and state across restarts: successful repeats are cached,
+failed/interrupted IDs are fenced. Deleting state, cloning a delegated grant to another
+ledger or editing local budgets defeats the owner-local accounting boundary; this is
+not hostile-operator quota enforcement. Delegated headroom is never auto-refunded.
+Raw user/model evidence remains untrusted data.
 Export checks scan allowlisted source for configured/suspected keys, but do not
 certify arbitrary user data as secret-free or all generated code as legally original.
 

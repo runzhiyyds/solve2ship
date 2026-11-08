@@ -8,10 +8,11 @@ import re
 import time
 import uuid
 
-from .candidates import RulesAdapter, PythonAdapter, ArtifactError
+from .candidates import RulesAdapter, PythonAdapter,PromptAdapter,HybridAdapter,ArtifactError,model_required
 from .contracts import canonical_json, sha256
 from .evaluation import partition_indices
-from .gateway import BudgetError
+from .gateway import BudgetError,ModelGateway,ProviderError,PRICING_VERIFIED_DATE,CONTEXT_CEILING,INPUT_RATE,OUTPUT_RATE
+from .invocation import CallTraceGateway,invocation_runtime
 from .search import SearchRepository
 
 
@@ -26,6 +27,8 @@ BUNDLE_FILES = {'candidate.json', 'contract.json', 'requirements.txt', 'README.m
 def bundle_files(family):
     extra={'runtime/docker_runtime.py','runtimes/python/runner.py','dependencies.json'} if family in ('python.v1','sklearn.classifier.v1','workflow.v1') else set()
     if family=='workflow.v1':extra|={'runtime/workflow_adapter.py','runtime/invocation.py','runtime/gateway.py'}
+    if family in ('workflow.v1','prompt.v1','hybrid.v1'):
+        extra|={'runtime/service_model.py','runtime/gateway.py','runtime/model_config.py','runtime/store.py','runtime/invocation.py'}
     if family=='sklearn.classifier.v1':
         extra|={'runtime/sklearn_adapter.py','runtimes/sklearn/train.py','runtimes/sklearn/predict.py','runtimes/sklearn/requirements.lock','runtimes/sklearn/Dockerfile'}
     return BUNDLE_FILES|extra
@@ -81,6 +84,12 @@ class DeliveryRepository:
     def prepare(self, search_id, request_id):
         if type(request_id) is not str or not re.fullmatch('[0-9a-f]{32}', request_id):
             raise DeliveryError('invalid_delivery_request')
+        existing=self.for_search(search_id)
+        if existing:
+            with self.store.connection() as db:
+                conflict=db.execute('SELECT search_id FROM deliveries WHERE request_id=?',(request_id,)).fetchone()
+            if conflict and conflict[0]!=search_id:raise DeliveryError('delivery_idempotency_conflict')
+            return existing
         source = self.searches.get(search_id)
         task = self.searches.tasks.get_revision(source['task_id'], source['revision'])
         contract = task['contract']
@@ -88,15 +97,27 @@ class DeliveryRepository:
         if source['state'] != 'succeeded' or not selection or not selection['candidate_id']:
             raise DeliveryError('validated_selection_required')
         candidate = next(c for c in source['candidates'] if c['id'] == selection['candidate_id'])
-        if candidate['family']=='workflow.v1':
-            from .workflow_adapter import WorkflowAdapter,requires_model
-            WorkflowAdapter.validate(candidate['artifact'])
-            if requires_model(candidate['artifact']):
-                raise DeliveryError('model_backed_serving_runtime_required')
         # Registry integration stays extensible; only this serving adapter is accepted.
-        if candidate['family'] not in ('rules.v1','python.v1','sklearn.classifier.v1','workflow.v1'):
+        if candidate['family'] not in ('rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1'):
             raise DeliveryError('standalone_adapter_not_available_for_family')
         adapter = RulesAdapter()
+        if candidate['family']=='prompt.v1':adapter=PromptAdapter()
+        if candidate['family']=='hybrid.v1':adapter=HybridAdapter()
+        needs_model=model_required(candidate['family'],candidate['artifact']);profile=None
+        if needs_model:
+            from .model_config import load_profile
+            try:
+                profile=load_profile(self.store.path.parent/'model.json')
+                if profile.model!='deepseek-flash':raise ValueError('unpriced_model')
+                ModelGateway(profile,self.searches.ledger,'preflight')
+            except (OSError,ValueError,BudgetError) as error:raise DeliveryError('model_profile_required') from error
+            if time.strftime('%Y-%m-%d',time.gmtime())!=PRICING_VERIFIED_DATE:raise BudgetError('price_snapshot_requires_review')
+            with self.store.connection() as db:
+                root=self.searches.ledger.root_scope(db,search_id)
+                peak=CONTEXT_CEILING*INPUT_RATE+1024*OUTPUT_RATE
+                for account,used in [('work',self.searches.ledger._committed(db,None)),(root,self.searches.ledger.tree_committed(db,root))]:
+                    limit=db.execute('SELECT limit_micro FROM budget_accounts WHERE id=?',(account,)).fetchone()
+                    if limit is None or limit[0]-used<peak:raise BudgetError('final_model_budget_insufficient')
         runtime_configuration = None
         if candidate['family'] in ('python.v1','sklearn.classifier.v1','workflow.v1'):
             from .docker_runtime import configured_sandbox
@@ -156,6 +177,9 @@ class DeliveryRepository:
                           'runtime_configuration':runtime_configuration}
                 db.execute('INSERT INTO deliveries VALUES(?,?,?,?,?,?,?,?)',
                            (delivery_id, request_id, search_id, candidate['id'], source['task_id'], source['revision'], time.time(), canonical_json(frozen)))
+                if needs_model:
+                    limit=db.execute('SELECT limit_micro FROM budget_accounts WHERE id=?',(root,)).fetchone()[0]
+                    db.execute('INSERT INTO budget_accounts VALUES(?,?)',('delivery:'+delivery_id,limit))
                 db.executemany('INSERT INTO final_quarantine VALUES(?,?)', [(digest, delivery_id) for digest in unique])
                 db.executemany('INSERT INTO execution_slots VALUES(?,?,?,?)', [(search_id, candidate['id'], index, root) for index in unique.values()])
                 self.searches.event(db, search_id, 'candidate_frozen_for_delivery', {'delivery_id': delivery_id,
@@ -164,22 +188,28 @@ class DeliveryRepository:
         if existing:
             return self.get(delivery_id)  # No replay after interrupted exposure.
         observations = []
+        gateway=ModelGateway(profile,self.searches.ledger,'delivery:'+delivery_id) if needs_model else None
         for index in unique.values():
             started = time.perf_counter()
             output,error,agreement=None,None,None
+            calls=CallTraceGateway(gateway)
             try:
-                output, _ = adapter.execute(candidate['artifact'], contract['definition']['samples'][index], None)
+                output, call_id = adapter.execute(candidate['artifact'], contract['definition']['samples'][index], calls)
+                calls.remember(call_id)
                 agreement=int(canonical_json(output)==canonical_json(labels[index]))
             except ArtifactError as exception:
                 error=str(exception)
+            except (ProviderError,BudgetError) as exception:
+                error=exception.code if isinstance(exception,ProviderError) else 'budget_exhausted'
             observations.append({'sample_index': index, 'output': output, 'label_agreement': agreement,'error':error,
-                                 'runtime':adapter.runtime_receipt() if hasattr(adapter,'runtime_receipt') else None,
+                                 'runtime':invocation_runtime(adapter,calls.call_ids),'model_call_ids':calls.call_ids,
                                  'latency_ms': (time.perf_counter() - started)*1000})
         report = {'split': 'final_test_once', 'observations': observations,
                   'provided_label_matches': sum(row['label_agreement'] or 0 for row in observations), 'count': len(observations),
                   'gate_passed': all(row['label_agreement'] for row in observations),
                   'label_source': 'provided_labels_unverified', 'quality_is_verified_accuracy': False,
-                  'small_sample_generalization_unknown': True, 'used_for_tuning': False, 'model_calls': 0}
+                  'small_sample_generalization_unknown': True, 'used_for_tuning': False,
+                  'model_calls':sum(len(row['model_call_ids']) for row in observations)}
         with self.store.connection(write=True) as db:
             db.execute('INSERT INTO delivery_reports VALUES(?,?)', (delivery_id, canonical_json(report)))
         if report['gate_passed']:
@@ -201,6 +231,9 @@ class DeliveryRepository:
         sources = Path(__file__).resolve().parent
         for name in ['contracts.py', 'candidates.py', 'service_runtime.py']:
             (package / name).write_bytes((sources / name).read_bytes())
+        if candidate['family'] in ('workflow.v1','prompt.v1','hybrid.v1'):
+            for name in ('service_model.py','gateway.py','model_config.py','store.py','invocation.py'):
+                (package/name).write_bytes((sources/name).read_bytes())
         if candidate['family'] in ('python.v1','sklearn.classifier.v1','workflow.v1'):
             (package/'docker_runtime.py').write_bytes((sources/'docker_runtime.py').read_bytes())
             (root/'runtimes/python').mkdir(parents=True,mode=0o700)
@@ -244,6 +277,18 @@ packages are needed. This local stdlib HTTP server is not production hosting.
 The Docker recipe is unbuilt: choose/review an official Python base image digest
 and its incorporated licenses first, then bind any host port to 127.0.0.1 only.
 No cloud deployment or container-isolation acceptance is claimed.
+''')
+        if model_required(candidate['family'],candidate['artifact']):
+            (root/'README.md').write_text('''# Private standalone model-backed service
+
+This frozen draft needs its own owner-only model profile and persistent usage DB.
+No key or authorization is included. After local source export, configure with the
+hidden prompt in runtime.service_model, explicitly authorize a cumulative budget,
+then start runtime.service_runtime with --state-dir pointing to that private state.
+POST /predict requires input and a unique 32-hex request_id. Successful duplicates
+return cached results; failed/interrupted IDs cannot be replayed. Code steps remain
+Docker-only. This is loopback development infrastructure, not production hosting.
+中文：独立服务需单独配置密钥和持久化预算，不继承实验数据库；源码不含密钥。
 ''')
         (root / 'Dockerfile').write_text('''# Draft only. No base image adopted, pulled, built or deployment validated.
 ARG PYTHON_BASE

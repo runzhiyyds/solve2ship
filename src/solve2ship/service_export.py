@@ -12,6 +12,7 @@ import zipfile
 
 from .contracts import canonical_json
 from .delivery import bundle_files, DeliveryError, DeliveryRepository
+from .candidates import model_required
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -46,6 +47,8 @@ def export_service(store, delivery_id):
         raise DeliveryError('independent_service_proof_required')
     original = Path(delivery['draft_path'])
     family=delivery['frozen']['candidate']['family']
+    needs_model=model_required(family,delivery['frozen']['candidate']['artifact'])
+    needs_docker=family in ('python.v1','workflow.v1','sklearn.classifier.v1')
     if hashlib.sha256((original/'manifest.json').read_bytes()).hexdigest() != delivery['proof']['manifest_sha256']:
         raise DeliveryError('frozen_serving_proof_mismatch')
     export_root = store.path.parent/'exports'
@@ -53,7 +56,7 @@ def export_service(store, delivery_id):
     # Serialize local file publication/receipt; no model call, network or image build.
     with store.connection(write=True) as db:
         existing = db.execute('SELECT receipt_json FROM service_export_versions WHERE delivery_id=? ORDER BY created_at DESC LIMIT 1', (delivery_id,)).fetchone()
-        if existing and json.loads(existing[0]).get('export_template_version',1)>=2:
+        if existing and json.loads(existing[0]).get('export_template_version',1)>=(3 if needs_model else 2):
             identifier = json.loads(existing[0])['id']
         else:
             identifier = uuid.uuid4().hex
@@ -76,7 +79,7 @@ def export_service(store, delivery_id):
                 if family=='rules.v1':
                     (package/'Dockerfile').write_text(dockerfile)
                 else:
-                    (package/'runtime-image.json').write_text(canonical_json(image)+'\n')
+                    (package/'runtime-image.json').write_text(canonical_json(image if needs_docker else {'docker_required':False})+'\n')
                 (package/'README.md').write_text('''# Solve2Ship standalone Rules service
 
 Apache-2.0. Copyright 2026 郭辰远 (Chenyuan Guo). Preserve LICENSE and NOTICE.
@@ -134,19 +137,59 @@ native gateway plus isolated Docker execution path described here; the explicit
 runtime dependency is part of the delivery contract. Semantic schema remains
 unconfirmed and provided-label checks are not a general accuracy guarantee.
 ''')
+                if needs_model:
+                    (package/'README.md').write_text('''# Standalone model-backed service / 独立模型服务
+
+Apache-2.0. Copyright 2026 郭辰远 (Chenyuan Guo). Preserve LICENSE/NOTICE.
+The source bundle contains NO key, budget authorization, experiment DB or dataset.
+Use installed Python 3.13+ from this directory. Configure your own profile at the
+hidden prompt, then explicitly authorize a cumulative budget in a separate state
+directory. This operator authorization is independent of the original STS project;
+it must not be assumed to create extra budget for an existing grant.
+
+    python3 -B -E -S -m runtime.service_model configure-model --state-dir ../service-state
+    python3 -B -E -S -m runtime.service_model authorize-budget --cny YOUR_EXPLICIT_LIMIT --state-dir ../service-state
+    python3 -B -E -S -m runtime.service_runtime --port 9000 --state-dir ../service-state
+    python3 -B -E -S -m runtime.service_model status --state-dir ../service-state
+
+The current reviewed model is DeepSeek Flash; pricing expires by UTC review date.
+Each call reserves conservative headroom before submission. Unknown charges remain
+reserved across restart. A delegated allowance cannot be raised by reconfiguration.
+Unused delegated headroom stays reserved in the original project budget; it is not
+a verified provider bill or an automatic refund. Use one persistent state per grant.
+
+POST /predict requires exactly {"request_id":"32 lowercase hex characters","input":...}.
+Use one new request ID per intended operation. Same ID/input after success returns
+the saved result without another model call. Reused IDs with changed input or a
+failed/interrupted operation return 409 and are never replayed automatically.
+State contains owner-only local profile/usage SQLite, not an encrypted production
+vault. Retain it on restart. No STS controller or experiment database is required.
+
+Code/model-loading steps still need the Engine/image in candidate.json and run only
+inside constrained Docker containers. No candidate container receives model keys or
+Docker sockets. Gateway model requests use the reviewed metered adapter. Keep this
+local developer service on loopback; no production tenancy/cloud hosting is claimed.
+
+中文：源码不含密钥、预算授权、实验数据库或样本。密钥只在终端隐藏输入，并明确
+设置累计预算；新操作者的授权不能默认为原项目增加预算。委托额度受原项目总预算
+约束，未用额度仍保留。保留独立用量数据库才能在重启后保持计费与请求防重放。
+相同编号的成功请求只返回缓存；失败/中断或输入冲突返回 409，不自动重跑。状态为
+仅所有者可读的本机明文，尚非生产保险库。代码步骤仍只在受限 Docker 内执行。
+''')
                 inventory = ROOT/'.sts/runtime-acceptance/docker-runtime-inventory.json'
                 metadata = {'repository_license': 'Apache-2.0', 'copyright_holder': policy['copyright_holder'],
                     'candidate_id': delivery['candidate_id'], 'artifact_sha256': delivery['frozen']['candidate']['artifact_sha256'],
                     'original_candidate_provenance': delivery['frozen']['candidate']['provenance'],
                     'distribution_review': 'local_source_bundle_reviewed_template_and_frozen_artifact',
-                    'family':family,'docker_engine_required':family!='rules.v1',
+                    'family':family,'docker_engine_required':needs_docker,'model_service_configuration_required':needs_model,
+                    'standalone_default_authorized_cny':0,'credentials_bundled':False,
                     'container_python_packages':policy.get('container_python_packages',[]) if family=='sklearn.classifier.v1' else [],
                     'legal_originality_certified': False, 'source_search_id': delivery['search_id'],
                     'frozen_manifest_sha256': delivery['proof']['manifest_sha256'],
                     'independent_startup_proof': delivery['proof'],
                     'final_report_summary':{key:delivery['report'][key] for key in ('split','count','provided_label_matches','label_source','quality_is_verified_accuracy','gate_passed')},
                     'final_report_sha256':hashlib.sha256(canonical_json(delivery['report']).encode()).hexdigest(),
-                    'runtime_reference': image, 'application_packages': [], 'copied_upstream_sources': [],
+                    'runtime_reference': image if needs_docker or family=='rules.v1' else {'kind':'installed_cpython','version_requirement':'3.13+'}, 'application_packages': [], 'copied_upstream_sources': [],
                     'runtime_inventory': json.loads(inventory.read_text()) if inventory.is_file() else None,
                     'binary_runtime_bundled': False, 'container_image_archive_bundled': False,
                     'formal_spdx_sbom': False, 'public_cloud_deployed': False}
@@ -173,7 +216,7 @@ unconfirmed and provided-label checks are not a general accuracy guarantee.
             receipt = {'id':identifier,'delivery_id':delivery_id,'created_at':time.time(),'license':'Apache-2.0',
                 'archive_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),
                 'distribution_scope':'local_application_source_bundle','credential_pattern_checks_passed':True,
-                'export_template_version':2,
+                'export_template_version':3 if needs_model else 2,
                 'image_archive_distributed':False,'publicly_published':False}
             db.execute('INSERT INTO service_export_versions VALUES(?,?,?,?)',(identifier,delivery_id,time.time(),canonical_json(receipt)))
     return exported_service(store,delivery_id)

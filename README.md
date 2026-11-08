@@ -10,7 +10,7 @@ packages supported winners as callable local services. Labels and an initial
 workflow are optional. Rules, code, ML and model-based solutions share evidence
 and budget controls; a simpler program can win over a more elaborate workflow.
 
-**v0.10.0 engineering preview.** This repository contains the product source,
+**v0.11.0 engineering preview.** This repository contains the product source,
 runtime recipes, tests and user documentation. Credentials, actual user datasets,
 local databases, agent context and development records are excluded.
 
@@ -22,8 +22,8 @@ local databases, agent context and development records are excluded.
 - Actual outputs/latency, token-based cost ceilings, per-step call attribution,
   grouped splits, bounded edits, paired retests, conservative pruning and rollback.
 - English default; Settings → 简体中文 localizes controls, states, costs and errors.
-- Local source ZIPs and independent HTTP checks for supported Rules/Python/ML
-  winners. Model-backed independent serving is not available yet.
+- Local source ZIPs and independent HTTP checks for Rules/Python/ML and model-backed
+  Prompt/Hybrid/workflow winners, with separate service credentials and usage budgets.
 
 Generated code/model loading stays inside accepted resource-limited Docker
 containers. Model calls use a metered gateway outside those containers. Keys,
@@ -62,13 +62,13 @@ Example input and outcome are in [examples](examples/).
 
 ## Evidence and limits
 
-The product test suite has 120 Python tests and five Node tests. Protocol fixtures
+The product test suite has 127 Python tests and five Node tests. Protocol fixtures
 are separate from real model/runtime execution. Local synthetic acceptance exercised
 model/code workflows and independent exports; those small cases do not establish
 business accuracy, general superiority or verified optimization gains. Provided
 labels are unverified; model-judge scores are uncalibrated proxies.
 
-Model-backed standalone credentials/budgets, general agents/harness, mature
+General agents/harness, mature
 optimizer adapters, calibrated criteria, broader model/data coverage and production
 hosting remain incomplete. Final checks consume holdout inputs once; unsupported
 serving fails before exposure. CPU/hosting cost is not included in token estimates.

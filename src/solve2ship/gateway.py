@@ -55,10 +55,15 @@ class Ledger:
     @staticmethod
     def _committed(db, scope):
         query = 'SELECT COALESCE(SUM(COALESCE(charged_micro,reserved_micro)),0) FROM model_calls'
-        return db.execute(query + (' WHERE scope=?' if scope is not None else ''), (scope,) if scope is not None else ()).fetchone()[0]
+        calls=db.execute(query + (' WHERE scope=?' if scope is not None else ''), (scope,) if scope is not None else ()).fetchone()[0]
+        grants=db.execute('SELECT COALESCE(SUM(amount_micro),0) FROM service_budget_grants').fetchone()[0] if scope is None else 0
+        return calls+grants
 
     @staticmethod
     def root_scope(db, scope):
+        if scope and scope.startswith('delivery:'):
+            delivery=db.execute('SELECT search_id FROM deliveries WHERE id=?',(scope.removeprefix('delivery:'),)).fetchone()
+            if delivery:return Ledger.root_scope(db,delivery[0])
         row = db.execute('''WITH RECURSIVE ancestors(id,source_search_id) AS (
             SELECT id,source_search_id FROM searches WHERE id=? UNION ALL
             SELECT s.id,s.source_search_id FROM searches s JOIN ancestors a ON s.id=a.source_search_id)
@@ -67,13 +72,33 @@ class Ledger:
 
     @staticmethod
     def tree_scopes(db, root):
-        return [row[0] for row in db.execute('''WITH RECURSIVE tree(id) AS (SELECT ? UNION ALL
+        scopes=[row[0] for row in db.execute('''WITH RECURSIVE tree(id) AS (SELECT ? UNION ALL
             SELECT s.id FROM searches s JOIN tree ON s.source_search_id=tree.id) SELECT id FROM tree''', (root,))]
+        scopes += ['delivery:'+row[0] for row in db.execute('SELECT id FROM deliveries WHERE search_id IN ('+','.join('?' for _ in scopes)+')',scopes)]
+        return scopes
 
     def tree_committed(self, db, root):
         scopes = self.tree_scopes(db, root)
-        return db.execute('SELECT COALESCE(SUM(COALESCE(charged_micro,reserved_micro)),0) FROM model_calls WHERE scope IN (' +
+        calls=db.execute('SELECT COALESCE(SUM(COALESCE(charged_micro,reserved_micro)),0) FROM model_calls WHERE scope IN (' +
                           ','.join('?' for _ in scopes) + ')', scopes).fetchone()[0]
+        return calls+db.execute('SELECT COALESCE(SUM(amount_micro),0) FROM service_budget_grants WHERE root_id=?',(root,)).fetchone()[0]
+
+    def grant_service(self,delivery_id,amount_micro):
+        if type(amount_micro) is not int or amount_micro<=0:raise BudgetError('invalid_service_allowance')
+        with self.store.connection(write=True) as db:
+            delivery=db.execute('SELECT d.search_id,r.report_json FROM deliveries d JOIN delivery_reports r ON r.delivery_id=d.id WHERE d.id=?',(delivery_id,)).fetchone()
+            if delivery is None or not json.loads(delivery['report_json'])['gate_passed']:raise BudgetError('final_gate_required')
+            existing=db.execute('SELECT * FROM service_budget_grants WHERE delivery_id=?',(delivery_id,)).fetchone()
+            if existing:
+                if existing['amount_micro']!=amount_micro:raise BudgetError('service_allowance_conflict')
+                return dict(existing)
+            root=self.root_scope(db,delivery['search_id'])
+            for account,used in [('work',self._committed(db,None)),(root,self.tree_committed(db,root))]:
+                limit=db.execute('SELECT limit_micro FROM budget_accounts WHERE id=?',(account,)).fetchone()
+                if limit is None or used+amount_micro>limit[0]:raise BudgetError('service_allowance_exceeds_budget')
+            grant={'id':uuid.uuid4().hex,'delivery_id':delivery_id,'root_id':root,'created_at':time.time(),'amount_micro':amount_micro}
+            db.execute('INSERT INTO service_budget_grants VALUES(:id,:delivery_id,:root_id,:created_at,:amount_micro)',grant)
+            return grant
 
     def reserve(self, scope, purpose, model, max_tokens):
         # Billing is enabled only for the model with a verified price snapshot.
@@ -84,6 +109,9 @@ class Ledger:
         amount = CONTEXT_CEILING * INPUT_RATE + max_tokens * OUTPUT_RATE
         call_id = uuid.uuid4().hex
         with self.store.connection(write=True) as db:
+            if scope.startswith('delivery:'):
+                row=db.execute('SELECT d.id,r.delivery_id FROM deliveries d LEFT JOIN delivery_reports r ON r.delivery_id=d.id WHERE d.id=?',(scope.removeprefix('delivery:'),)).fetchone()
+                if row is None or row[1] is not None:raise BudgetError('delivery_not_active')
             search = db.execute('SELECT state,lease_until FROM searches WHERE id=?', (scope,)).fetchone()
             if search is not None and (search['state'] != 'running' or search['lease_until'] is None or search['lease_until'] <= time.time()):
                 raise BudgetError('search_not_active')
@@ -150,12 +178,14 @@ class Ledger:
                 call['diagnostics'] = {key:value for key,value in diagnostics.items() if key != 'content'} if diagnostics else None
             root = self.root_scope(db, scope) if scope else None
             root_limit = db.execute('SELECT limit_micro FROM budget_accounts WHERE id=?', (root,)).fetchone() if root else None
+            grants=[dict(r) for r in db.execute('SELECT * FROM service_budget_grants'+(' WHERE root_id=?' if root else ''),(root,) if root else ())]
             return {'currency': 'CNY', 'limit_cny': row[0] / MICRO if row else 0,
                     'committed_ceiling_cny': self._committed(db, scope) / MICRO,
                     'root_search_id': root, 'root_limit_cny': root_limit[0]/MICRO if root_limit else None,
                     'root_committed_ceiling_cny': self.tree_committed(db, root)/MICRO if root else None,
                     'pricing_source': PRICING_SOURCE,
-                    'pricing_verified_date': PRICING_VERIFIED_DATE, 'provider_bill_verified': False, 'calls': calls}
+                    'pricing_verified_date': PRICING_VERIFIED_DATE, 'provider_bill_verified': False, 'calls': calls,
+                    'service_allowances':grants,'delegated_ceiling_cny':sum(r['amount_micro'] for r in grants)/MICRO}
 
 
 class NoRedirect(HTTPRedirectHandler):
