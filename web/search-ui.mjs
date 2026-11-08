@@ -3,7 +3,7 @@ import { errorText } from './i18n.mjs';
 const $ = (id) => document.getElementById(id);
 
 export function familyLabel(family,t) {
-  const key={'rules.v1':'rulesFamily','python.v1':'pythonFamily','prompt.v1':'promptFamily','hybrid.v1':'hybridFamily','sklearn.classifier.v1':'mlFamily','workflow.v1':'workflowFamily'}[family];
+  const key={'rules.v1':'rulesFamily','python.v1':'pythonFamily','prompt.v1':'promptFamily','hybrid.v1':'hybridFamily','sklearn.classifier.v1':'mlFamily','workflow.v1':'workflowFamily','agent.tools.v1':'agentFamily'}[family];
   return key?t(key):family;
 }
 
@@ -31,7 +31,7 @@ function executionView(row,calls,t) {
   }
   for(const [index,step] of (row.runtime?.steps||[]).entries()) {
     const details=document.createElement('details'),summary=document.createElement('summary');
-    summary.textContent=`${t('stepLabel')} ${index+1} · ${familyLabel(step.family,t)} · ${invocationSummary({runtime:{model_call_ids:step.model_call_ids,status:step.status},error:step.status==='failed',latency_ms:step.latency_ms},calls,t)}`;
+    summary.textContent=`${t('stepLabel')} ${index+1} · ${familyLabel(step.family,t)}${step.tool?` · ${t('selectedTool')}: ${step.tool}`:step.action==='final'?` · ${t('finalAnswer')}`:''} · ${invocationSummary({runtime:{model_call_ids:step.model_call_ids,status:step.status},error:step.status==='failed',latency_ms:step.latency_ms},calls,t)}`;
     details.append(summary);
     if(step.error){const message=document.createElement('p');message.textContent=errorText(t,step.error);details.append(message);}
     else {const output=document.createElement('pre');output.textContent=step.output_omitted?t('stepOutputOmitted'):JSON.stringify(step.output,null,2);details.append(output);}
@@ -74,8 +74,8 @@ export function initializeSearch({ api, t, taskUI, renderRoot }) {
       $('search-error').textContent = selected.error ? `${t('searchStoppedError')} ${errorText(t,selected.error)}` : '';
       $('selection-summary').textContent = selected.selection ? `${t(selected.selection.evidence.status)} · ${t(selected.selection.evidence.basis)} · ${t(delivery ? 'finalConsumed' : 'finalSealed')}` : '';
       const winner = selected.candidates.find((row) => row.id === selected.selection?.candidate_id);
-      const needsModelServing=['prompt.v1','hybrid.v1'].includes(winner?.family)||(winner?.family==='workflow.v1' && winner.artifact.steps.some(step=>step.family==='prompt.v1'));
-      $('delivery-section').hidden = selected.state !== 'succeeded' || !['rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1'].includes(winner?.family);
+      const needsModelServing=['prompt.v1','hybrid.v1','agent.tools.v1'].includes(winner?.family)||(winner?.family==='workflow.v1' && winner.artifact.steps.some(step=>step.family==='prompt.v1'));
+      $('delivery-section').hidden = selected.state !== 'succeeded' || !['rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1','agent.tools.v1'].includes(winner?.family);
       $('prepare-delivery').disabled = pending || !!delivery;
       $('delivery-status').textContent = delivery ? t(delivery.export?.archive_integrity_verified ? 'local_export_ready' : delivery.state) : needsModelServing?t('modelServingReady'):'';
       $('delivery-metrics').textContent = delivery?.report ? `${t('deliveryChecks')}: ${delivery.report.provided_label_matches}/${delivery.report.count}. ${t(delivery.draft_integrity_verified && delivery.proof?.status === 'passed' ? 'serviceVerified' : 'serviceNotVerified')}` : '';

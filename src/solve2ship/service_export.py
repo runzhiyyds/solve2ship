@@ -48,7 +48,7 @@ def export_service(store, delivery_id):
     original = Path(delivery['draft_path'])
     family=delivery['frozen']['candidate']['family']
     needs_model=model_required(family,delivery['frozen']['candidate']['artifact'])
-    needs_docker=family in ('python.v1','workflow.v1','sklearn.classifier.v1')
+    needs_docker=family in ('python.v1','workflow.v1','sklearn.classifier.v1','agent.tools.v1')
     if hashlib.sha256((original/'manifest.json').read_bytes()).hexdigest() != delivery['proof']['manifest_sha256']:
         raise DeliveryError('frozen_serving_proof_mismatch')
     export_root = store.path.parent/'exports'

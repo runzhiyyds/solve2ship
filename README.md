@@ -10,7 +10,7 @@ packages supported winners as callable local services. Labels and an initial
 workflow are optional. Rules, code, ML and model-based solutions share evidence
 and budget controls; a simpler program can win over a more elaborate workflow.
 
-**v0.11.0 engineering preview.** This repository contains the product source,
+**v0.12.0 engineering preview.** This repository contains the product source,
 runtime recipes, tests and user documentation. Credentials, actual user datasets,
 local databases, agent context and development records are excluded.
 
@@ -18,7 +18,8 @@ local databases, agent context and development records are excluded.
 
 - Immutable task revisions from JSON/JSONL samples, goals and optional constraints.
 - Real Rules, Prompt, Hybrid, isolated Python, numeric scikit-learn and bounded
-  model-backed workflow candidates; no invented optimization charts or outputs.
+  model-backed workflow candidates, plus experimental bounded tool-use agents; no
+  invented optimization charts or outputs.
 - Actual outputs/latency, token-based cost ceilings, per-step call attribution,
   grouped splits, bounded edits, paired retests, conservative pruning and rollback.
 - English default; Settings → 简体中文 localizes controls, states, costs and errors.
@@ -62,11 +63,13 @@ Example input and outcome are in [examples](examples/).
 
 ## Evidence and limits
 
-The product test suite has 127 Python tests and five Node tests. Protocol fixtures
+The product test suite has 138 Python tests and five Node tests. Protocol fixtures
 are separate from real model/runtime execution. Local synthetic acceptance exercised
 model/code workflows and independent exports; those small cases do not establish
 business accuracy, general superiority or verified optimization gains. Provided
-labels are unverified; model-judge scores are uncalibrated proxies.
+labels are unverified; model-judge scores are uncalibrated proxies. A mixed Chinese
+tool-selection acceptance retained agent output failures and selected the simpler
+Python solution; tool-use is a competing approach, not an assumed improvement.
 
 General agents/harness, mature
 optimizer adapters, calibrated criteria, broader model/data coverage and production

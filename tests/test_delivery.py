@@ -231,11 +231,23 @@ class DeliveryTests(unittest.TestCase):
                 with self.assertRaises(HTTPError) as error:
                     urlopen(Request(address+'/predict', data=raw, headers={'Content-Type': 'application/json'}), timeout=2)
                 self.assertEqual(error.exception.code, 422)
-        for raw, headers, status in [(b'{"input":null}', {'Origin': 'https://other.test'}, 403),
-                                     (b' '*262145, {}, 413)]:
-            with self.assertRaises(HTTPError) as error:
-                urlopen(Request(address+'/predict', data=raw, headers={'Content-Type': 'application/json', **headers}), timeout=2)
-            self.assertEqual(error.exception.code, status)
+        with self.assertRaises(HTTPError) as error:
+            urlopen(Request(address+'/predict', data=b'{"input":null}', headers={
+                'Content-Type': 'application/json', 'Origin': 'https://other.test'}), timeout=2)
+        self.assertEqual(error.exception.code, 403)
+        # The server rejects oversized lengths before consuming the body. Sending a
+        # full large upload while it closes can race into an OS-level TCP reset.
+        # Send headers alone to assert early refusal without depending on socket buffers.
+        from http.client import HTTPConnection
+        connection = HTTPConnection('127.0.0.1', server.server_port, timeout=2)
+        try:
+            connection.putrequest('POST', '/predict')
+            connection.putheader('Content-Type', 'application/json')
+            connection.putheader('Content-Length', '262145')
+            connection.endheaders()
+            self.assertEqual(connection.getresponse().status, 413)
+        finally:
+            connection.close()
         with urlopen(Request(address+'/predict', data=b'{"input":null}', headers={'Content-Type': 'application/json'}), timeout=2) as response:
             self.assertEqual(json.load(response), {'result': None})
 

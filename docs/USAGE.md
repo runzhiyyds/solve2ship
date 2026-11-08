@@ -102,3 +102,28 @@ authorization. Model checks and local compute estimates are not provider invoice
 保存一个 32 位小写十六进制 request_id；成功重复请求不再计费，失败/中断编号返回 409，
 不会自动重试。项目内划拨额度继续占用原全局/整树预算，未用部分不自动退回。不要将
 本机开发 HTTP 服务当作生产托管。
+
+
+## Experimental tool-use candidates / 实验性工具调用方案
+
+When the reviewed Docker runtime is available, the planner may propose agent.tools.v1
+alongside simpler families. It defines 1–3 frozen Rules/Python tools and task
+instructions; for each input the model selects a tool with JSON arguments, observes
+its output and chooses the next tool or final result. At most four metered decisions
+include the final answer. The last decision cannot launch another unused tool. No
+shell, network, files, credentials, dynamic tool imports, subagents or recursion are
+available. Generated Python stays in the accepted Docker policy.
+
+Expand a sample to see selected tool, observed output, final action, per-decision
+calls/costs and stop errors. A tool can succeed while the final model answer is wrong;
+selection still checks actual output. Step exhaustion/failure/cancellation never
+triggers a hidden final call or transport retry. Agent delivery uses the same
+standalone profile, persistent usage state and request fencing; the current live
+acceptance selected/exported Python. Agent final/package/HTTP coverage is protocol
+fixture evidence, not a live agent final/export claim.
+
+中文：运行环境可用时，系统可自主生成工具调用候选，逐条输入选择冻结工具、读取观察
+并返回最终输出；最多四次付费决策。展开样本可看所选工具、观察、最终回答和逐步费用。
+工具成功并不代表最终答案正确。无任意网络、文件、Shell、子代理或动态导入权限，
+Python 只在受限容器内执行。达到上限或失败不触发隐藏重试。本轮真实胜出并交付的是
+Python；Agent 最终检查/服务打包/HTTP 的测试属于明确的协议夹具证据。

@@ -16,7 +16,7 @@ MAX_BYTES = 262144
 
 
 def create_service(candidate, port=9000, host='127.0.0.1', *, runtime_root=None,model_state=None,model_gateway=None):
-    if candidate.get('family') not in ('rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1') or sha256(candidate['artifact']) != candidate.get('artifact_sha256'):
+    if candidate.get('family') not in ('rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1','agent.tools.v1') or sha256(candidate['artifact']) != candidate.get('artifact_sha256'):
         raise ValueError('unsupported_or_changed_artifact')
     if candidate['family']=='workflow.v1':
         from .workflow_adapter import WorkflowAdapter,requires_model
@@ -34,7 +34,10 @@ def create_service(candidate, port=9000, host='127.0.0.1', *, runtime_root=None,
         sandbox = DockerSandbox(configuration['image'],runtime_root=root)
         sandbox.accepted_engine_version = configuration['engine_version']
         sandbox.engine.status()
-        if candidate['family']=='workflow.v1':
+        if candidate['family']=='agent.tools.v1':
+            from .tool_agent import ToolAgentAdapter
+            adapter=ToolAgentAdapter(sandbox)
+        elif candidate['family']=='workflow.v1':
             from .workflow_adapter import WorkflowAdapter
             adapter=WorkflowAdapter(sandbox)
         elif candidate['family']=='sklearn.classifier.v1':
@@ -86,7 +89,7 @@ def create_service(candidate, port=9000, host='127.0.0.1', *, runtime_root=None,
                 self.send(200, {'request': {'input': 'JSON value'}, 'response': {'result': 'JSON value'},
                                 'semantic_schema': 'unconfirmed', 'model_calls': needs_model,
                                 'request_id_required':needs_model,'standalone_usage_database_required':needs_model,
-                                'docker_required': candidate['family'] in ('python.v1','workflow.v1','sklearn.classifier.v1')})
+                                'docker_required': candidate['family'] in ('python.v1','workflow.v1','sklearn.classifier.v1','agent.tools.v1')})
             else:
                 self.send(404, {'error': 'not_found'})
 

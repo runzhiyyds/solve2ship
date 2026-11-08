@@ -8,7 +8,7 @@ class ArtifactError(ValueError):
 
 
 def model_required(family,artifact):
-    if family in ('prompt.v1','hybrid.v1'):return True
+    if family in ('prompt.v1','hybrid.v1','agent.tools.v1'):return True
     if family=='workflow.v1':
         from .workflow_adapter import requires_model
         return requires_model(artifact)
@@ -140,4 +140,6 @@ def builtin_registry(*, sandbox=None, step_guard=None):
         registry.register(PythonAdapter(sandbox))
         from .workflow_adapter import WorkflowAdapter
         registry.register(WorkflowAdapter(sandbox,step_guard))
+        from .tool_agent import ToolAgentAdapter
+        registry.register(ToolAgentAdapter(sandbox,step_guard))
     return registry

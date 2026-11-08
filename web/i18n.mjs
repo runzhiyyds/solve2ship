@@ -1,7 +1,9 @@
 export const messages = {
   'en-US': {
     settings: 'Settings', language: 'Language', milestone: 'M7 / EXECUTABLE SOLUTIONS',
-    rulesFamily: 'Rules', pythonFamily: 'Python program', promptFamily: 'Model prompt', hybridFamily: 'Rules + model', mlFamily: 'Trained classifier', workflowFamily: 'Multi-step solution',
+    rulesFamily: 'Rules', pythonFamily: 'Python program', promptFamily: 'Model prompt', hybridFamily: 'Rules + model', mlFamily: 'Trained classifier', workflowFamily: 'Multi-step solution', agentFamily: 'Tool-using solution', selectedTool: 'Selected tool', finalAnswer: 'Final answer',
+    agent_step_limit: 'Decision limit reached; no final output was returned.', agent_cancelled: 'Cancelled before the next model or tool call.',
+    invalid_agent_action: 'The model selected an invalid tool or response.', invalid_agent_tool: 'This tool configuration is invalid.', agent_tool_failed: 'The selected tool failed; execution stopped.',
     sampleLabel: 'Sample', stepLabel: 'Step', outputLabel: 'Output', latencyLabel: 'Elapsed', modelCallsLabel: 'Model calls', inferenceCostLabel: 'Inference cost ceiling',
     rawExecutionEvidence: 'View raw execution evidence', stepOutputOmitted: 'Output omitted due to size; hash retained in raw evidence.', costUnattributed: 'Cost attribution incomplete',
     labelMatch: 'Matches the provided, unverified label', labelMismatch: 'Does not match the provided, unverified label',
@@ -92,7 +94,9 @@ export const messages = {
   },
   'zh-CN': {
     settings: '设置', language: '语言', milestone: 'M7 / 可执行方案',
-    rulesFamily: '规则方案', pythonFamily: 'Python 程序', promptFamily: '模型提示方案', hybridFamily: '规则与模型', mlFamily: '已训练分类器', workflowFamily: '多步骤方案',
+    rulesFamily: '规则方案', pythonFamily: 'Python 程序', promptFamily: '模型提示方案', hybridFamily: '规则与模型', mlFamily: '已训练分类器', workflowFamily: '多步骤方案', agentFamily: '工具调用方案', selectedTool: '所选工具', finalAnswer: '最终输出',
+    agent_step_limit: '已达决策次数上限，未返回最终输出。', agent_cancelled: '已在下一次模型或工具调用前取消。',
+    invalid_agent_action: '模型选择了无效工具或返回格式。', invalid_agent_tool: '工具配置无效。', agent_tool_failed: '所选工具执行失败，已停止。',
     sampleLabel: '样本', stepLabel: '步骤', outputLabel: '输出', latencyLabel: '耗时', modelCallsLabel: '模型调用次数', inferenceCostLabel: '推理费用上界',
     rawExecutionEvidence: '查看原始执行证据', stepOutputOmitted: '输出较大，已省略；内容哈希保留在原始证据中。', costUnattributed: '费用归因尚不完整',
     labelMatch: '与用户提供但未核验的标签一致', labelMismatch: '与用户提供但未核验的标签不一致',

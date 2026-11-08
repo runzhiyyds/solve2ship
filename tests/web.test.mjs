@@ -43,6 +43,9 @@ test('workflow summaries localize states, families, costs and errors in Chinese 
   assert.match(invocationSummary(row,calls,zh),/失败.*模型调用次数: 2.*推理费用上界: ¥2\.105604.*耗时: 12\.5 ms/);
   assert.match(invocationSummary(row,calls,en),/Failed.*Model calls: 2.*Inference cost ceiling/);
   assert.equal(familyLabel('workflow.v1',zh),'多步骤方案');
+  assert.equal(familyLabel('agent.tools.v1',zh),'工具调用方案');
+  assert.match(errorText(zh,'agent_step_limit'),/决策次数上限/);
+  assert.match(errorText(en,'agent_step_limit'),/Decision limit/);
   assert.equal(familyLabel('future.adapter',zh),'future.adapter');
   assert.match(errorText(zh,'provider_usage_unverified'),/预留费用继续保留/);
   assert.equal(errorText(zh,'provider_http_429'),'模型服务请求失败 (HTTP 429)');

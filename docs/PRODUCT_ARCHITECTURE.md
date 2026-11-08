@@ -35,3 +35,16 @@ cryptographically enforced distributed quota or production vault.
 凭据和持久化用量数据库。划拨额度继续占用原预算，包内不含密钥或正数授权；重复成功
 请求使用缓存，失败/中断请求禁止自动重放。当前为本机信任边界，不代表分布式防篡改
 配额、生产安全或全局最优保证。
+
+
+Experimental tool_agent.py adds agent.tools.v1 through the existing open registry.
+Unlike a frozen workflow order, each input triggers a bounded model decision over
+frozen tool descriptions and prior JSON observations. Tools reuse Rules/Python
+adapters; Python stays container-only. Four decisions at most, no automatic recovery
+calls, cancellation before tools/decisions and complete receipts. A correct tool
+result does not bypass final-output evaluation. No new framework/dependency is
+installed or vendored; general agents/harness and optimizer libraries remain open.
+
+中文：实验性工具候选在每次输入后动态选择工具，不固定为某条工作流。工具复用已有
+规则/Python 适配器，保留逐次调用、容器与终止证据；工具结果正确也不能绕过最终输出
+评测。未安装或复制额外框架，通用 Agent/Harness 与成熟优化库接入仍待完成。

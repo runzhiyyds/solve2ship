@@ -45,11 +45,11 @@ def verify(draft, cases, *, source_bundle=False, trusted_sources=None):
             raise ValueError('unreviewed_executable_template')
     if (draft / 'runtime/__init__.py').read_bytes() != b'':
         raise ValueError('unreviewed_executable_template')
-    if candidate['family'] not in ('rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1'):
+    if candidate['family'] not in ('rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1','agent.tools.v1'):
         raise ValueError('unsupported_serving_family')
     from solve2ship.candidates import model_required
     if model_required(candidate['family'],candidate['artifact']):raise ValueError('use_metered_model_service_verifier')
-    if candidate['family'] in ('python.v1','workflow.v1','sklearn.classifier.v1'):
+    if candidate['family'] in ('python.v1','workflow.v1','sklearn.classifier.v1','agent.tools.v1'):
         sources=[('runtime/docker_runtime.py','src/solve2ship/docker_runtime.py'),('runtimes/python/runner.py','runtimes/python/runner.py')]
         if candidate['family']=='workflow.v1':sources += [('runtime/'+name,'src/solve2ship/'+name) for name in ('workflow_adapter.py','invocation.py','gateway.py')]
         if candidate['family']=='workflow.v1':sources += [('runtime/'+name,'src/solve2ship/'+name) for name in ('service_model.py','model_config.py','store.py')]

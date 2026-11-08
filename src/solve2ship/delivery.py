@@ -25,9 +25,10 @@ BUNDLE_FILES = {'candidate.json', 'contract.json', 'requirements.txt', 'README.m
 
 
 def bundle_files(family):
-    extra={'runtime/docker_runtime.py','runtimes/python/runner.py','dependencies.json'} if family in ('python.v1','sklearn.classifier.v1','workflow.v1') else set()
+    extra={'runtime/docker_runtime.py','runtimes/python/runner.py','dependencies.json'} if family in ('python.v1','sklearn.classifier.v1','workflow.v1','agent.tools.v1') else set()
+    if family=='agent.tools.v1':extra|={'runtime/tool_agent.py','runtime/workflow_adapter.py'}
     if family=='workflow.v1':extra|={'runtime/workflow_adapter.py','runtime/invocation.py','runtime/gateway.py'}
-    if family in ('workflow.v1','prompt.v1','hybrid.v1'):
+    if family in ('workflow.v1','prompt.v1','hybrid.v1','agent.tools.v1'):
         extra|={'runtime/service_model.py','runtime/gateway.py','runtime/model_config.py','runtime/store.py','runtime/invocation.py'}
     if family=='sklearn.classifier.v1':
         extra|={'runtime/sklearn_adapter.py','runtimes/sklearn/train.py','runtimes/sklearn/predict.py','runtimes/sklearn/requirements.lock','runtimes/sklearn/Dockerfile'}
@@ -98,7 +99,7 @@ class DeliveryRepository:
             raise DeliveryError('validated_selection_required')
         candidate = next(c for c in source['candidates'] if c['id'] == selection['candidate_id'])
         # Registry integration stays extensible; only this serving adapter is accepted.
-        if candidate['family'] not in ('rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1'):
+        if candidate['family'] not in ('rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1','agent.tools.v1'):
             raise DeliveryError('standalone_adapter_not_available_for_family')
         adapter = RulesAdapter()
         if candidate['family']=='prompt.v1':adapter=PromptAdapter()
@@ -119,7 +120,7 @@ class DeliveryRepository:
                     limit=db.execute('SELECT limit_micro FROM budget_accounts WHERE id=?',(account,)).fetchone()
                     if limit is None or limit[0]-used<peak:raise BudgetError('final_model_budget_insufficient')
         runtime_configuration = None
-        if candidate['family'] in ('python.v1','sklearn.classifier.v1','workflow.v1'):
+        if candidate['family'] in ('python.v1','sklearn.classifier.v1','workflow.v1','agent.tools.v1'):
             from .docker_runtime import configured_sandbox
             from .sklearn_adapter import configured_ml_sandbox,SklearnAdapter
             sandbox = configured_ml_sandbox(self.store.path.parent/'ml-runtime.json') if candidate['family']=='sklearn.classifier.v1' else configured_sandbox(self.store.path.parent/'sandbox.json')
@@ -127,7 +128,10 @@ class DeliveryRepository:
                 raise DeliveryError('verified_sandbox_required')
             if sandbox.engine.status()['engine_version']!=sandbox.accepted_engine_version:
                 raise DeliveryError('runtime_review_required')
-            if candidate['family']=='workflow.v1':
+            if candidate['family']=='agent.tools.v1':
+                from .tool_agent import ToolAgentAdapter
+                adapter=ToolAgentAdapter(sandbox)
+            elif candidate['family']=='workflow.v1':
                 from .workflow_adapter import WorkflowAdapter
                 adapter=WorkflowAdapter(sandbox)
             else:adapter = SklearnAdapter(sandbox) if candidate['family']=='sklearn.classifier.v1' else PythonAdapter(sandbox)
@@ -231,16 +235,19 @@ class DeliveryRepository:
         sources = Path(__file__).resolve().parent
         for name in ['contracts.py', 'candidates.py', 'service_runtime.py']:
             (package / name).write_bytes((sources / name).read_bytes())
-        if candidate['family'] in ('workflow.v1','prompt.v1','hybrid.v1'):
+        if candidate['family'] in ('workflow.v1','prompt.v1','hybrid.v1','agent.tools.v1'):
             for name in ('service_model.py','gateway.py','model_config.py','store.py','invocation.py'):
                 (package/name).write_bytes((sources/name).read_bytes())
-        if candidate['family'] in ('python.v1','sklearn.classifier.v1','workflow.v1'):
+        if candidate['family'] in ('python.v1','sklearn.classifier.v1','workflow.v1','agent.tools.v1'):
             (package/'docker_runtime.py').write_bytes((sources/'docker_runtime.py').read_bytes())
             (root/'runtimes/python').mkdir(parents=True,mode=0o700)
             (root/'runtimes/python/runner.py').write_bytes((sources.parents[1]/'runtimes/python/runner.py').read_bytes())
             inventory=json.loads((sources.parents[1]/'dependencies.json').read_text())
             (root/'dependencies.json').write_text(canonical_json({'container_images':inventory['container_images'],
                 'container_python_packages':inventory.get('container_python_packages',[])})+'\n')
+            if candidate['family']=='agent.tools.v1':
+                for name in ('tool_agent.py','workflow_adapter.py'):
+                    (package/name).write_bytes((sources/name).read_bytes())
             if candidate['family']=='workflow.v1':
                 for name in ('workflow_adapter.py','invocation.py','gateway.py'):
                     (package/name).write_bytes((sources/name).read_bytes())

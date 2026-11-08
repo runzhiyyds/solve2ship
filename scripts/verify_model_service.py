@@ -125,7 +125,7 @@ def verify(store,delivery_id,grant_id,package=None):
         'grant_id':grant_id,'delegated_ceiling_cny':grant['amount_micro']/MICRO,'standalone_committed_ceiling_cny':after['committed_ceiling_cny'],
         'cached_replay_no_new_calls':True,'restart_budget_preserved':True,'automatic_failed_request_replay':False,
         'contract_cases':len(cases),'malformed_request_rejected':True,'manifest_sha256':manifest_hash,
-        'artifact_sha256':candidate['artifact_sha256'],'docker_required':candidate['family']=='workflow.v1',
+        'artifact_sha256':candidate['artifact_sha256'],'docker_required':candidate['family'] in ('workflow.v1','agent.tools.v1'),
         'container_built':False,'cloud_deployed':False,'environment_keys':sorted(environment)}
 
 
