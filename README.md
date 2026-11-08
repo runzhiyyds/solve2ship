@@ -81,8 +81,9 @@ serving fails before exposure. CPU/hosting cost is not included in token estimat
 - [Security and scope / 安全与边界](docs/SECURITY.md)
 - [Changelog / 版本变动](CHANGELOG.md), [contributing](CONTRIBUTING.md)
 
-Push/PR checks run automatically. Version tags run tests before publishing bilingual
-engineering-preview release notes. Only accepted product changes are synchronized;
+Push/PR and version-tag checks are configured. Hosted checks were unavailable at
+initial publication; this preview passed the local suite. Once hosted execution is
+available, version tags run tests before publishing bilingual preview notes. Only accepted product changes are synchronized;
 ordinary file saves and private development records are not automatically uploaded.
 
 ## License

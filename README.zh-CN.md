@@ -71,7 +71,8 @@ PYTHONPATH=src python3 -m solve2ship model-status
 - [安全与能力边界](docs/SECURITY.md)
 - [版本变动](CHANGELOG.md)、[贡献说明](CONTRIBUTING.md)
 
-推送/PR 自动运行检查；版本标签先测试再发布中英双语工程预览说明。只同步已验收的
+已配置推送/PR 和版本标签检查；首发时托管检查无法启动，已通过本机测试。托管执行恢复
+后，标签将先测试再发布双语预览说明。只同步已验收的
 产品变更，不自动上传普通文件保存或私有开发记录。
 
 ## 许可证
