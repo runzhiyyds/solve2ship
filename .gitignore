@@ -8,3 +8,16 @@ __pycache__/
 coverage/
 artifacts/
 .DS_Store
+
+# Keep private development context out of product history
+AGENTS.md
+agent.md
+CODEX_CONTEXT.md
+codex_context.md
+STS_PROJECT_HISTORY.md
+/docs/milestones/
+/docs/decisions/
+/docs/DEVELOPMENT_PLAN.md
+/docs/VISION_COVERAGE.md
+/docs/BLOCKERS.md
+/docs/PUBLISHING.md
