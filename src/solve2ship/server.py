@@ -192,7 +192,7 @@ def create_server(store, port=8000):
                 elif path == '/api/searches':
                     if body.keys() != {'task_id', 'revision', 'request_id'}:
                         raise SearchError('invalid_search_request')
-                    self.send(201, searches.create(body['task_id'], body['revision'], body['request_id']))
+                    self.send(201, searches.create(body['task_id'], body['revision'], body['request_id'], protocol='m8'))
                 elif (match := SEARCH_PATH.fullmatch(path)) and match[2]:
                     if body:
                         raise SearchError('invalid_search_request')

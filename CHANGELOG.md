@@ -1,5 +1,42 @@
 # Changelog / 版本变动
 
+## v0.13.0 — 2026-11-09 — Executable criteria / 可执行评测规范
+
+
+### English
+
+- Optional mature jsonschema adapter: a metered proposal sees training inputs only,
+  freezes a bounded structural specification and coverage/gaps for the search tree,
+  then records actual per-output passes/violations. Child edits inherit the same
+  criteria. Invalid proposals, unknown charges and interrupted attempts persist;
+  no silent regeneration or external-reference/regex/code execution.
+- Structure checks are explicitly unreviewed. They do not establish semantic quality,
+  override label/judge rankings or unlock unsupported final delivery. A no-label
+  Chinese task exercised 42 executions and inherited the same schema across an
+  automatic edit; its final quality gate correctly remained closed.
+- 157 Python tests with optional dependencies, six Node tests; base checks explicitly
+  skip 11 optional-engine tests. Exact versions, wheel hashes and upstream MIT texts
+  were reviewed before install. No runtime binaries are distributed.
+- New bilingual brand, FAQ, use cases, objective related-work comparison, citation,
+  community templates and reusable media drafts. No discovery/ranking gains claimed;
+  no social posts were sent. Companion sts-skills v0.1.0 is separately downloadable.
+- Nov-9 official DeepSeek pricing review retains existing conservative rates and all
+  historical usage. Local serving remains a developer preview, not production hosting.
+
+### 简体中文
+
+- 可选 jsonschema 成熟校验器接入：付费标准生成只看训练输入，冻结整树的结构规范及
+  覆盖/遗漏，再逐条记录真实通过与错误。子迭代继承同一规范；无效提案、未知费用和中断
+  均留痕，不偷偷重生成。禁止外部引用、正则或代码执行。
+- 结构规范仍未审阅，不证明语义质量，不覆盖标签/裁判排序，也不绕过最终交付门禁。
+  无标签中文任务实际完成 42 次执行与一次自动修改，规范哈希保持不变，最终质量门禁
+  正确保持关闭。
+- 安装可选依赖后通过 157 项 Python、6 项前端测试；基础环境明确跳过 11 项引擎测试。
+  五项依赖版本、包哈希及 MIT 许可在安装前核验，不随源码分发二进制。
+- 中英品牌、FAQ、场景、客观相关项目比较、引用规范、社区模板和可复用传播草稿齐备；
+  不宣称检索排名收益，未向社交账号发帖。配套 sts-skills v0.1.0 已单独提供下载。
+- 重新核验 Nov-9 官方价格，保守费率未变、历史用量不清零。服务仍为本机开发预览。
+
 ## v0.12.0 — 2026-11-08 — Bounded tool use / 受限工具调用
 
 

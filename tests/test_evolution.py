@@ -25,7 +25,7 @@ class EvolutionTests(unittest.TestCase):
         definition = task_definition()
         self.task = TaskRepository(self.store).save(definition,compile_task(definition)['content_sha256'])
         self.worker = SearchWorker(self.store,Path(directory.name)/'not-a-real-key-file')
-        for mock in [patch('solve2ship.gateway.time.strftime',return_value='2026-11-08'),
+        for mock in [patch('solve2ship.gateway.time.strftime',return_value='2026-11-09'),
                      patch('solve2ship.search.load_profile',return_value=self.provider.profile),
                      patch('solve2ship.search.ModelGateway',side_effect=lambda profile,ledger,scope: ModelGateway(profile,ledger,scope,allow_fixture=True))]:
             mock.start(); self.addCleanup(mock.stop)

@@ -42,6 +42,26 @@ def main():
     manifest = json.loads((ROOT / 'dependencies.json').read_text())
     if manifest['application_packages'] or manifest['vendored_sources']:
         errors.append('New dependencies require a reviewed inventory/checker update')
+    optional=manifest.get('optional_application_packages',[])
+    if optional:
+        expected_versions={'jsonschema':'4.26.0','jsonschema-specifications':'2025.9.1','attrs':'26.1.0','referencing':'0.37.0','rpds-py':'2026.9.1'}
+        if {row['name']:row['version'] for row in optional}!=expected_versions:
+            errors.append('Optional schema dependencies differ from reviewed versions')
+        import hashlib
+        lock=(ROOT/'requirements/schema.lock').read_text()
+        expected_lines=set()
+        for row in optional:
+            artifacts=row.get('artifacts',[])
+            if not artifacts or row.get('spdx_license')!='MIT' or not row.get('distribution_duties'):
+                errors.append('Optional dependency requires reviewed artifact/license provenance')
+            expected_lines.add(row['name']+'=='+row['version']+' '+' '.join('--hash=sha256:'+a['sha256'] for a in artifacts))
+            for license_file in row.get('license_files',[]):
+                path=ROOT/license_file['path']
+                if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=license_file['sha256']:
+                    errors.append('Optional dependency license text differs from reviewed inventory')
+            if not row.get('license_files'):errors.append('Optional dependency requires upstream license text')
+        if expected_lines!={line for line in lock.splitlines() if line and not line.startswith('#')}:
+            errors.append('Optional dependency lock differs from reviewed artifact inventory')
     if manifest['repository_license'] != 'Apache-2.0' or not manifest.get('license_approved_by_owner'):
         errors.append('Repository license must match the owner-approved Apache-2.0 decision')
     import hashlib
@@ -80,7 +100,7 @@ def main():
             elif isinstance(node, ast.ImportFrom) and not node.level:
                 names = [(node.module or '').split('.')[0]]
             for name in names:
-                if name not in sys.stdlib_module_names:
+                if name not in sys.stdlib_module_names and not (path.name=='criteria.py' and name in {'jsonschema','referencing'} and optional):
                     errors.append(f'Unreviewed dependency {name} in {path.relative_to(ROOT)}')
             if isinstance(node, ast.Call):
                 called = ast.unparse(node.func)

@@ -17,12 +17,14 @@ def mutate_candidate(repository, search_id, source, parent, contract, gateway, r
         index = row['sample_index']
         evidence.append({'sample_index': index, 'input': contract['definition']['samples'][index], 'prior_output': row['output'],
                          'error': row['error'], 'expected_output': labels.get(index), 'label_present': index in labels,
-                         'judge': row.get('judge'), 'source': 'validation_feedback_not_final_test'})
+                         'judge': row.get('judge'), 'criteria': row.get('criteria'), 'source': 'validation_feedback_not_final_test'})
     adapter=registry.adapters[parent['family']]
     editable=adapter.editable_artifact(parent['artifact']) if hasattr(adapter,'editable_artifact') else parent['artifact']
     context = {'goal': contract['definition']['output_specification'], 'constraints': contract['definition']['constraints'],
                'parent_candidate': {key: parent[key] for key in ('family', 'name', 'artifact')},
                'feedback': evidence, 'adapter': registry.describe()[parent['family']]}
+    from .criteria import get_bundle
+    context['structural_criteria_hypothesis'] = get_bundle(repository, source['id'])
     context['parent_candidate']['artifact']=editable
     if format_repair:
         context['format_repair_feedback'] = 'A prior generation was rejected. Return one syntactically valid JSON object with unique keys, exact schema and no markdown. This is a new generation, not an HTTP retry.'
@@ -73,7 +75,7 @@ def record_comparison(repository, search_id, source):
 
 
 def choose_automatic_target(repository, record):
-    if record['state'] != 'succeeded' or record['protocol_version'] not in ('m3', 'm4','m3-repair','m4-repair') or not record['selection']:
+    if record['state'] != 'succeeded' or record['protocol_version'] not in ('m3', 'm4','m3-repair','m4-repair','m8') or not record['selection']:
         return None
     if any(row['state'] != 'settled' for row in record['budget']['calls']):
         return None

@@ -8,3 +8,8 @@ check: test
 	python3 scripts/check_repository.py --public
 check-docker:
 	python3 scripts/verify_docker.py
+
+.PHONY: check-schema
+check-schema:
+	PYTHONPATH=src python3 -c 'from solve2ship.criteria import SchemaAdapter; SchemaAdapter()'
+	$(MAKE) check

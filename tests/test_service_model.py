@@ -30,7 +30,7 @@ class ServiceModelTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.root=Path(self.temp.name)
         self.provider=ProviderFixture();self.addCleanup(self.provider.close)
-        date=patch('solve2ship.gateway.time.strftime',return_value='2026-11-08');date.start();self.addCleanup(date.stop)
+        date=patch('solve2ship.gateway.time.strftime',return_value='2026-11-09');date.start();self.addCleanup(date.stop)
         self.candidate={'id':'fixture-only','family':'prompt.v1','artifact':{'system_prompt':'Return cancel.'}}
         self.candidate['artifact_sha256']=sha256(self.candidate['artifact'])
         self.state=ServiceState(self.root/'service',self.candidate)

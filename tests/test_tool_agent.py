@@ -36,7 +36,7 @@ class ToolAgentTests(unittest.TestCase):
         self.repository = SearchRepository(self.store)
         self.repository.ledger.configure('work', 100 * MICRO)
         self.provider = ProviderFixture(); self.addCleanup(self.provider.close)
-        date = patch('solve2ship.gateway.time.strftime', return_value='2026-11-08')
+        date = patch('solve2ship.gateway.time.strftime', return_value='2026-11-09')
         date.start(); self.addCleanup(date.stop)
         definition = {'samples': [{'text': 'cancel', 'case': i} for i in range(20)],
                       'output_specification': 'Return cancel.',

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { messages, normalizeLocale, translate,errorText,fieldText } from '../web/i18n.mjs';
-import { funnelStages,familyLabel,inferenceEvidence,invocationSummary } from '../web/search-ui.mjs';
+import { funnelStages,familyLabel,inferenceEvidence,invocationSummary,criteriaSummary } from '../web/search-ui.mjs';
 
 test('English default is independent of browser locale; explicit Chinese is supported', () => {
   for (const locale of [null, undefined, '', 'zh', 'fr-FR']) assert.equal(normalizeLocale(locale), 'en-US');
@@ -63,4 +63,13 @@ test('missing call attribution is explicit and old single-call evidence remains 
   assert.match(translate('zh-CN','modelServingReady'),/源码包不会携带密钥/);
   assert.equal(translate('zh-CN','serviceAllowance'),'独立服务预留额度');
   assert.match(errorText(zh,'service_request_not_replayable'),/不会自动重跑/);
+});
+
+
+test('structural evidence remains distinct from semantic quality in both languages',()=>{
+  const zh=key=>translate('zh-CN',key),en=key=>translate('en-US',key);
+  assert.match(criteriaSummary({status:'checked',passed:true},zh),/结构检查通过.*尚未审阅/);
+  assert.match(criteriaSummary({status:'checked',passed:false},en),/separate from label\/judge quality/);
+  assert.match(criteriaSummary({status:'unavailable'},zh),/不可用/);
+  assert.match(translate('en-US','criteriaUnreviewed'),/Semantic quality.*unverified/);
 });

@@ -48,3 +48,18 @@ installed or vendored; general agents/harness and optimizer libraries remain ope
 中文：实验性工具候选在每次输入后动态选择工具，不固定为某条工作流。工具复用已有
 规则/Python 适配器，保留逐次调用、容器与终止证据；工具结果正确也不能绕过最终输出
 评测。未安装或复制额外框架，通用 Agent/Harness 与成熟优化库接入仍待完成。
+
+
+M8.1 freezes a model-proposed output schema before planning using training inputs
+only. An optional exact-version jsonschema adapter validates a bounded 2020-12 subset
+(no references/regex/formats/combinators/code). Per-output structural evidence is
+separate from labels/judges and never grants semantic acceptance. Immutable root
+criteria/attempts persist across restart, child edits and invalid/unknown proposals.
+Source metadata preserves controlled failure stages and bounded redacted proposals.
+No final quality gate is relaxed. The Studio and separately published sts-skills
+are two entry paths sharing the outcome/evidence/service principles; the companion
+skill is agent guidance/tooling, not a fully bundled execution engine.
+
+中文：M8.1 先用训练输入冻结待审阅的输出结构规范，再评测候选；检查、标签和裁判分别
+留痕。整树继承、并发防重复、失败/未知费用保留；最终质量门禁不放宽。Studio 与独立
+sts-skills 是两种入口，技能不自带完整执行引擎或安全环境。

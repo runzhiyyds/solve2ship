@@ -63,7 +63,7 @@ def main():
     signal.signal(signal.SIGINT, shutdown)
     worker.start()
     search_worker.start()
-    print(f"Solve2Ship M7.6 local preview: http://127.0.0.1:{server.server_port}", flush=True)
+    print(f"Solve2Ship M8.1 local preview: http://127.0.0.1:{server.server_port}", flush=True)
     try:
         server.serve_forever(poll_interval=0.2)
     finally:

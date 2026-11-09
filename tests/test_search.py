@@ -92,7 +92,7 @@ class BillingTests(unittest.TestCase):
         self.path = Path(directory.name) / 'state.db'; self.store = Store(self.path)
         self.ledger = Ledger(self.store)
         self.ledger.configure('work', 100 * MICRO); self.ledger.configure('scope', 10 * MICRO)
-        date = patch('solve2ship.gateway.time.strftime', return_value='2026-11-08'); date.start(); self.addCleanup(date.stop)
+        date = patch('solve2ship.gateway.time.strftime', return_value='2026-11-09'); date.start(); self.addCleanup(date.stop)
 
     def test_concurrent_reservation_cannot_overspend(self):
         self.ledger.configure('work', 3 * MICRO)
@@ -127,7 +127,7 @@ class BillingTests(unittest.TestCase):
     def test_unverified_model_and_stale_pricing_fail_closed(self):
         with self.assertRaises(BudgetError):
             self.ledger.reserve('scope', 'test', 'unpriced-model', 128)
-        with patch('solve2ship.gateway.time.strftime', return_value='2026-11-09'), self.assertRaises(BudgetError):
+        with patch('solve2ship.gateway.time.strftime', return_value='2099-01-01'), self.assertRaises(BudgetError):
             self.ledger.reserve('scope', 'test', 'deepseek-flash', 128)
         self.assertEqual(self.ledger.status()['calls'], [])
         provider = ProviderFixture(); self.addCleanup(provider.close)
@@ -156,6 +156,9 @@ class BillingTests(unittest.TestCase):
             db.execute('DROP TABLE service_exports')
             db.execute('DROP TABLE service_export_versions')
             db.execute('DROP TABLE service_budget_grants')
+            db.execute('DROP TABLE criteria_attempts')
+            db.execute('DROP TABLE criteria_bundles')
+            db.execute('ALTER TABLE executions DROP COLUMN criteria_json')
             db.execute('PRAGMA user_version=8')
         migrated = Ledger(Store(self.path))
         status = migrated.status()
@@ -216,7 +219,7 @@ class SearchTests(unittest.TestCase):
         self.definition = {'samples': [{'text': 'cancel'}, {'text': 'hi'}], 'output_specification': 'Output cancel or other.',
                            'budget': {'max_cost_cny': 10, 'max_candidate_executions': 10}}
         self.task = TaskRepository(self.store).save(self.definition, compile_task(self.definition)['content_sha256'])
-        date = patch('solve2ship.gateway.time.strftime', return_value='2026-11-08'); date.start(); self.addCleanup(date.stop)
+        date = patch('solve2ship.gateway.time.strftime', return_value='2026-11-09'); date.start(); self.addCleanup(date.stop)
 
     def create(self, request_id=None):
         return self.repository.create(self.task['task_id'], 1, request_id or uuid.uuid4().hex, protocol='m2')

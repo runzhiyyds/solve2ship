@@ -1,3 +1,3 @@
 """Solve2Ship local search, isolated execution and reviewed source delivery."""
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"

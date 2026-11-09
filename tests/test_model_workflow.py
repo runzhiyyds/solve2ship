@@ -34,7 +34,7 @@ class ModelWorkflowTests(unittest.TestCase):
         self.store=Store(Path(directory.name)/'state.db');self.repository=SearchRepository(self.store)
         self.repository.ledger.configure('work',100*MICRO)
         self.provider=ProviderFixture();self.addCleanup(self.provider.close)
-        date=patch('solve2ship.gateway.time.strftime',return_value='2026-11-08');date.start();self.addCleanup(date.stop)
+        date=patch('solve2ship.gateway.time.strftime',return_value='2026-11-09');date.start();self.addCleanup(date.stop)
         definition={'samples':[{'text':'cancel','case':i} for i in range(20)],'output_specification':'Return cancel.',
                     'labels':[{'sample_index':i,'expected_output':'cancel'} for i in range(20)],
                     'budget':{'max_cost_cny':10,'max_candidate_executions':60}}

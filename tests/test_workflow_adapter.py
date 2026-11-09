@@ -100,7 +100,7 @@ class WorkflowTests(unittest.TestCase):
         provider=ProviderFixture();self.addCleanup(provider.close)
         sandbox=SandboxProtocolFixture();registry=builtin_registry(sandbox=sandbox)
         run=repository.create(saved['task_id'],1,uuid.uuid4().hex);search_id,owner=repository.claim()
-        with patch('test_search.plan',return_value=fixture_plan),patch('solve2ship.gateway.time.strftime',return_value='2026-11-08'):
+        with patch('test_search.plan',return_value=fixture_plan),patch('solve2ship.gateway.time.strftime',return_value='2026-11-09'):
             execute_search(repository,search_id,owner,ModelGateway(provider.profile,repository.ledger,search_id,allow_fixture=True),registry)
         result=repository.get(run['id']);self.assertEqual(result['state'],'succeeded')
         workflow=next(c for c in result['candidates'] if c['family']=='workflow.v1')

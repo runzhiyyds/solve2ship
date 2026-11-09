@@ -127,3 +127,36 @@ fixture evidence, not a live agent final/export claim.
 工具成功并不代表最终答案正确。无任意网络、文件、Shell、子代理或动态导入权限，
 Python 只在受限容器内执行。达到上限或失败不触发隐藏重试。本轮真实胜出并交付的是
 Python；Agent 最终检查/服务打包/HTTP 的测试属于明确的协议夹具证据。
+
+
+## Optional executable structure checks / 可选可执行结构检查
+
+The base app still starts without extra packages. To enable reviewed structure checks
+with CPython 3.13, create/activate a local virtual environment and install exact hashes:
+
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install --only-binary=:all: --require-hashes -r requirements/schema.lock
+make check-schema
+make run
+```
+
+New Studio searches use the M8 protocol: one metered proposal uses training inputs
+and the goal, then freezes an output schema and its stated coverage/gaps for the
+whole search tree. Child edits/retests inherit it; validation/final outputs cannot
+silently rewrite evaluation criteria. An uncertain/interrupted proposal is not
+replayed. Missing optional packages produce explicit unavailable evidence; package
+version changes require review. The adapter supports a bounded JSON Schema subset,
+not arbitrary code, references, regex, formats or network access.
+
+Expand Executable structure checks and sample evidence to inspect schema, provenance,
+actual passes/errors and semantic requirements left uncovered. Proposed criteria are
+unreviewed: they neither override labels/judges nor unlock unsupported final delivery.
+A structural pass can still be semantically wrong. No-label final quality still needs
+independent executable quality criteria/human calibration, not just a model judge.
+
+中文：基础启动无需新增依赖；若启用结构检查，按上述命令在独立环境中安装已锁定的五项
+依赖。新探索只向标准生成器提供训练输入和目标，整个搜索树冻结同一份检查；检查不随
+验证或最终反馈偷偷变化。可展开查看来源、覆盖/遗漏、逐条通过与错误。模型提出的标准
+仍未审阅，结构通过不能当作真实准确率，也不会绕过尚未支持的最终质量门禁。

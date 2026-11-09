@@ -11,7 +11,7 @@ import uuid
 
 
 TERMINAL = {"succeeded", "failed", "cancelled"}
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 
 
 class Store:
@@ -277,6 +277,22 @@ class Store:
                         CREATE TRIGGER grants_no_delete BEFORE DELETE ON service_budget_grants
                         BEGIN SELECT RAISE(ABORT,'service allowances are immutable'); END;
                         PRAGMA user_version=12;
+                    """)
+                    version = 12
+                if version == 12:
+                    self.migrate(db,"""
+                        CREATE TABLE criteria_attempts(root_id TEXT PRIMARY KEY REFERENCES searches(id),created_at REAL NOT NULL);
+                        CREATE TABLE criteria_bundles(root_id TEXT PRIMARY KEY REFERENCES searches(id),created_at REAL NOT NULL,bundle_json TEXT NOT NULL);
+                        ALTER TABLE executions ADD COLUMN criteria_json TEXT;
+                        CREATE TRIGGER criteria_attempts_no_update BEFORE UPDATE ON criteria_attempts
+                        BEGIN SELECT RAISE(ABORT,'criteria attempts are immutable'); END;
+                        CREATE TRIGGER criteria_attempts_no_delete BEFORE DELETE ON criteria_attempts
+                        BEGIN SELECT RAISE(ABORT,'criteria attempts are immutable'); END;
+                        CREATE TRIGGER criteria_bundles_no_update BEFORE UPDATE ON criteria_bundles
+                        BEGIN SELECT RAISE(ABORT,'criteria bundles are immutable'); END;
+                        CREATE TRIGGER criteria_bundles_no_delete BEFORE DELETE ON criteria_bundles
+                        BEGIN SELECT RAISE(ABORT,'criteria bundles are immutable'); END;
+                        PRAGMA user_version=13;
                     """)
                 db.commit()
             except BaseException:

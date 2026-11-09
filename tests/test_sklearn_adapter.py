@@ -76,7 +76,7 @@ class SklearnBoundaryTests(unittest.TestCase):
         fixture_plan={'candidates':[proposal(),plan()['candidates'][1]]}
         sandbox=SandboxFixture();registry=builtin_registry();registry.register(SklearnAdapter(sandbox))
         run=repository.create(saved['task_id'],1,uuid.uuid4().hex)
-        with patch('test_search.plan',return_value=fixture_plan),patch('solve2ship.gateway.time.strftime',return_value='2026-11-08'):
+        with patch('test_search.plan',return_value=fixture_plan),patch('solve2ship.gateway.time.strftime',return_value='2026-11-09'):
             search_id,owner=repository.claim()
             execute_search(repository,search_id,owner,ModelGateway(provider.profile,repository.ledger,search_id,allow_fixture=True),registry)
             result=repository.get(search_id)

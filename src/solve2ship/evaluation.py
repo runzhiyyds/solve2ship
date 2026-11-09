@@ -39,6 +39,7 @@ def wilson(matches, total):
 def candidate_metrics(executions):
     successes = [row for row in executions if row['error'] is None]
     labels = [row['label_agreement'] for row in successes if row['label_agreement'] is not None]
+    checked = [row['criteria'] for row in successes if row.get('criteria') and row['criteria'].get('status') == 'checked']
     judged = [row['judge'] for row in successes if row.get('judge') and row['judge'].get('status') == 'scored']
     return {'attempts': len(executions), 'available': len(successes),
             'label_agreement': {'count': len(labels), 'matches': sum(labels), 'rate': sum(labels)/len(labels) if labels else None,
@@ -46,6 +47,8 @@ def candidate_metrics(executions):
                                 'wilson_95': wilson(sum(labels), len(labels)), 'source': 'provided_labels_unverified'},
             'judge_proxy': {'count': len(judged), 'mean_score': sum(row['score'] for row in judged)/len(judged) if judged else None,
                             'source': 'uncalibrated_model_judge'},
+            'structural_criteria': {'count': len(checked), 'passed': sum(bool(row['passed']) for row in checked),
+                                    'source': 'model_proposed_structure_unreviewed', 'semantic_quality_verified': False},
             'mean_latency_ms': sum(row['latency_ms'] for row in executions)/len(executions) if executions else None,
             'improvability_estimate': {'source': 'unvalidated_heuristic', 'expected_gain': None,
                'direction': 'inspect_runtime_failures' if len(successes) < len(executions) else ('inspect_label_bad_cases' if labels and sum(labels) < len(labels) else 'collect_more_independent_evidence')},
@@ -67,6 +70,8 @@ def conservative_decision(metrics, all_metrics):
 
 
 def evaluate_candidates(repository, search_id, owner, built, contract, gateway, registry, stop):
+    from .criteria import get_bundle, check_output
+    criteria_bundle = get_bundle(repository, search_id)
     splits = partition_indices(contract)
     validation = splits['validation']
     definition = contract['definition']
@@ -103,13 +108,15 @@ def evaluate_candidates(repository, search_id, owner, built, contract, gateway, 
         sample = definition['samples'][index]
         started = time.perf_counter()
         output, call_id, error, agreement, judge = None, None, None, None, None
-        latency = None
+        latency, criteria = None, None
         calls=CallTraceGateway(gateway)
         adapter=registry.adapters[candidate['family']]
         try:
             output, call_id = adapter.execute(candidate['artifact'], sample, calls)
             calls.remember(call_id)
             latency = (time.perf_counter()-started)*1000
+            if criteria_bundle is not None:
+                criteria = check_output(criteria_bundle, output)
             if index in labels:
                 agreement = int(canonical_json(output) == canonical_json(labels[index]))
             else:
@@ -132,12 +139,12 @@ def evaluate_candidates(repository, search_id, owner, built, contract, gateway, 
         except (ArtifactError, ValueError, TypeError, KeyError):
             error = 'candidate_execution_failed'
         observation = {'sample_index': index, 'output': output, 'error': error, 'label_agreement': agreement,
-                       'judge': judge, 'latency_ms': latency if latency is not None else (time.perf_counter()-started)*1000, 'call_id': call_id,
+                       'judge': judge, 'criteria': criteria, 'latency_ms': latency if latency is not None else (time.perf_counter()-started)*1000, 'call_id': call_id,
                        'runtime':invocation_runtime(adapter,calls.call_ids)}
         observations[candidate_id].append(observation)
         repository.add_execution(search_id, candidate_id, index, output, error, observation['latency_ms'], call_id, agreement,
                                  fidelity=fidelity, split=role, judge=judge,
-                                 runtime=observation['runtime'])
+                                 runtime=observation['runtime'], criteria=criteria)
         return True
 
     for stage, selected_indices in [('L1', indices[:2]), ('L2', indices[2:])]:
@@ -190,6 +197,8 @@ def evaluate_candidates(repository, search_id, owner, built, contract, gateway, 
                 'common_sample_indices': sorted(common), 'split': role, 'final_test_evaluated': False,
                 'remaining_unknowns': ['label_or_judge_correctness', 'arbitrary_natural_language_constraint_enforcement', 'generalization'],
                 'candidate_states': states, 'quality_is_verified_accuracy': False}
+    evidence['criteria_schema_sha256'] = criteria_bundle.get('schema_sha256') if criteria_bundle else None
+    evidence['structural_criteria_used_for_quality_ranking'] = False
     evidence['duplicate_inputs_grouped'] = True
     evidence['conflicting_label_input_count'] = len(conflicts)
     evidence['tie_breakers'] = ['observed_inference_cost_ceiling', 'observed_candidate_latency']

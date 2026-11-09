@@ -10,13 +10,13 @@ from urllib.parse import urlsplit
 from .contracts import sha256, strict_json_loads, validate_json
 
 
-# Verified against DeepSeek official pricing on 2026-11-08. Micro-CNY per token,
+# Verified against DeepSeek official pricing on 2026-11-09. Micro-CNY per token,
 # peak cache-miss input/output. Actual provider billing can be lower; this is a ceiling estimate.
 INPUT_RATE = 2
 OUTPUT_RATE = 8
 CONTEXT_CEILING = 1048576
 MICRO = 1000000
-PRICING_VERIFIED_DATE = '2026-11-08'
+PRICING_VERIFIED_DATE = '2026-11-09'
 PRICING_SOURCE = 'https://api-docs.deepseek.com/zh-cn/quick_start/pricing/'
 
 

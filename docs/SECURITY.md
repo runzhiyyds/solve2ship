@@ -35,3 +35,10 @@ contact the repository maintainer privately for sensitive reports.
 模型调用先预留预算，未知费用保留且不自动重放。取消不能撤销已提交请求。发布源码
 不包含用户数据、密钥、数据库、镜像归档和私有开发过程文件；安全/合法性检查均有明确
 范围，不代表完整认证。敏感问题请私下联系维护者，不要在公开 Issue 中发送密钥。
+
+
+Optional structural checks use reviewed exact-version packages and a finite schema
+allowlist. External/dynamic references, regex, formats, combinators and generated
+code are rejected before evaluation; schema size/depth/node counts and violation
+collection are bounded. Proposed schemas/coverage are untrusted model data, not a
+quality certificate. No external schema retrieval or format extras are enabled.

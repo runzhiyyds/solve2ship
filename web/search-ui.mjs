@@ -19,11 +19,31 @@ export function invocationSummary(row,calls,t) {
   return `${t(status)} · ${t('modelCallsLabel')}: ${evidence.ids.length} · ${t('inferenceCostLabel')}: ${evidence.complete?'¥'+evidence.ceilingCny.toFixed(6):t('costUnattributed')} · ${t('latencyLabel')}: ${Number(row.latency_ms||0).toFixed(1)} ms`;
 }
 
+export function criteriaSummary(receipt,t) {
+  if(receipt?.status==='checked') return t(receipt.passed?'criteriaPassed':'criteriaFailed');
+  return t('criteriaUnavailable');
+}
+
+function criteriaView(bundle,t) {
+  const fragment=document.createDocumentFragment();
+  const status=document.createElement('p');status.textContent=t(bundle.status==='preparing'?'criteriaPreparing':bundle.status==='proposed'?'criteriaUnreviewed':'criteriaUnavailable');fragment.append(status);
+  for(const [field,key] of [['covered','criteriaCovered'],['uncovered','criteriaUncovered']]) {
+    if(!bundle[field]?.length)continue;
+    const heading=document.createElement('p');heading.textContent=t(key);fragment.append(heading);
+    const list=document.createElement('ul');for(const text of bundle[field]){const item=document.createElement('li');item.textContent=text;list.append(item);}fragment.append(list);
+  }
+  const details=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre');
+  summary.textContent=t('criteriaRaw');pre.textContent=JSON.stringify(bundle,null,2);details.append(summary,pre);fragment.append(details);
+  return fragment;
+}
+
 function executionView(row,calls,t) {
   const article=document.createElement('article');article.className='execution-record';
   const heading=document.createElement('h4');heading.textContent=`${t('sampleLabel')} ${row.sample_index+1}`;
   const metrics=document.createElement('p');metrics.className='field-help';metrics.textContent=invocationSummary(row,calls,t);
   article.append(heading,metrics);
+  if(row.criteria){const checks=document.createElement('p');checks.className='field-help';checks.textContent=criteriaSummary(row.criteria,t);article.append(checks);
+    if(row.criteria.errors?.length){const pre=document.createElement('pre');pre.textContent=JSON.stringify(row.criteria.errors,null,2);article.append(pre);}}
   if(row.error){const message=document.createElement('p');message.textContent=errorText(t,row.error);article.append(message);}
   else {
     if(row.label_agreement===0||row.label_agreement===1){const label=document.createElement('p');label.className='field-help';label.textContent=t(row.label_agreement?'labelMatch':'labelMismatch');article.append(label);}
@@ -53,7 +73,7 @@ export function funnelStages(record) {
 }
 
 export function initializeSearch({ api, t, taskUI, renderRoot }) {
-  let searches = [], selected = null, budget = null, pending = false, message = '', listKey = '', resultKey = '', followActive = false, lineage = null, graphKey = '', delivery = null;
+  let searches = [], selected = null, budget = null, pending = false, message = '', listKey = '', resultKey = '', followActive = false, lineage = null, graphKey = '', criteriaKey = '', delivery = null;
   function render() {
     const task = taskUI.selected();
     $('search-section').hidden = !task;
@@ -73,6 +93,9 @@ export function initializeSearch({ api, t, taskUI, renderRoot }) {
       $('search-summary').textContent = `${t(selected.state)} · ${selected.candidates.length} ${t('candidateCount')} · ${selected.executions.length} ${t('executionCount')}`;
       $('search-error').textContent = selected.error ? `${t('searchStoppedError')} ${errorText(t,selected.error)}` : '';
       $('selection-summary').textContent = selected.selection ? `${t(selected.selection.evidence.status)} · ${t(selected.selection.evidence.basis)} · ${t(delivery ? 'finalConsumed' : 'finalSealed')}` : '';
+      $('criteria-evidence').hidden=!selected.criteria_bundle;
+      const nextCriteriaKey=JSON.stringify([selected.criteria_bundle,t('criteriaTitle')]);
+      if(selected.criteria_bundle&&criteriaKey!==nextCriteriaKey){criteriaKey=nextCriteriaKey;$('criteria-summary').replaceChildren(criteriaView(selected.criteria_bundle,t));}
       const winner = selected.candidates.find((row) => row.id === selected.selection?.candidate_id);
       const needsModelServing=['prompt.v1','hybrid.v1','agent.tools.v1'].includes(winner?.family)||(winner?.family==='workflow.v1' && winner.artifact.steps.some(step=>step.family==='prompt.v1'));
       $('delivery-section').hidden = selected.state !== 'succeeded' || !['rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1','agent.tools.v1'].includes(winner?.family);

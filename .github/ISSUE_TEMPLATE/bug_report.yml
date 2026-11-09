@@ -1,0 +1,26 @@
+name: Bug report / 问题反馈
+description: Report reproducible behavior without credentials or private data.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Please use synthetic/minimized examples. Never include API keys, .sts files, user datasets or raw private logs. 请勿上传密钥、数据库或真实用户数据。"
+  - type: input
+    id: version
+    attributes:
+      label: Release or commit / 版本
+      placeholder: v0.12.0 or commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps and expected versus actual behavior / 复现与预期
+      description: Include a minimal non-sensitive example and the visible error code.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / 运行环境
+      description: OS, Python, Node and relevant Docker/runtime versions; omit profile contents.

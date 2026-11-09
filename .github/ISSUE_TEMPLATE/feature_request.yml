@@ -1,0 +1,20 @@
+name: Outcome or feature / 目标与功能建议
+description: Describe the problem and evidence needed to solve it.
+title: "[Feature]: "
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome / 希望解决什么问题
+      description: Explain the user problem before choosing a framework or agent design.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Acceptance evidence / 如何判断有效
+      description: Useful examples, constraints and quality/cost criteria. Use non-sensitive data.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered / 已考虑的方案

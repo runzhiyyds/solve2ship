@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "Please cite the release or commit of Solve2Ship used in your work. This software has no associated research paper."
+type: software
+title: "Solve2Ship: From Goals to Working AI Solutions"
+abstract: "An open-source AI-native solution engineering project exploring Goal-to-Service through executable cross-paradigm search, evaluation, bounded iteration and independent local service delivery."
+authors:
+  - family-names: Guo
+    given-names: Chenyuan
+version: 0.13.0
+date-released: 2026-11-09
+url: "https://github.com/runzhiyyds/solve2ship"
+repository-code: "https://github.com/runzhiyyds/solve2ship"
+license: Apache-2.0
+keywords:
+  - autonomous AI engineering
+  - goal-to-service
+  - cross-paradigm solution search
+  - evaluation-driven optimization
+  - automated machine learning

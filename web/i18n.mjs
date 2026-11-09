@@ -1,6 +1,8 @@
 export const messages = {
   'en-US': {
-    settings: 'Settings', language: 'Language', milestone: 'M7 / EXECUTABLE SOLUTIONS',
+    settings: 'Settings', language: 'Language', milestone: 'Define the outcome. Let solutions compete. Ship the best.',
+    criteriaTitle: 'Executable structure checks', criteriaPreparing: 'Preparing checks from training inputs; final holdout remains sealed.', criteriaUnreviewed: 'Model-proposed checks; structure only. Semantic quality and human calibration remain unverified.',
+    criteriaCovered: 'Proposed coverage', criteriaUncovered: 'Unverified semantic requirements', criteriaRaw: 'View schema and provenance', criteriaPassed: 'Structure checks passed; specification is unreviewed.', criteriaFailed: 'Structure check failed; this is separate from label/judge quality.', criteriaUnavailable: 'Structure checks unavailable; inspect setup or proposal evidence.',
     rulesFamily: 'Rules', pythonFamily: 'Python program', promptFamily: 'Model prompt', hybridFamily: 'Rules + model', mlFamily: 'Trained classifier', workflowFamily: 'Multi-step solution', agentFamily: 'Tool-using solution', selectedTool: 'Selected tool', finalAnswer: 'Final answer',
     agent_step_limit: 'Decision limit reached; no final output was returned.', agent_cancelled: 'Cancelled before the next model or tool call.',
     invalid_agent_action: 'The model selected an invalid tool or response.', invalid_agent_tool: 'This tool configuration is invalid.', agent_tool_failed: 'The selected tool failed; execution stopped.',
@@ -20,7 +22,7 @@ export const messages = {
     service_request_id_conflict: 'This request identifier was already used with different input.', service_request_not_replayable: 'This request failed or was interrupted and will not be replayed automatically.',
     service_allowance_exceeds_budget: 'The service allowance exceeds the authorized project or search budget.',
     price_snapshot_requires_review: 'The model price policy needs review before another paid call.', root_search_budget_exhausted: 'The shared search budget is exhausted.',
-    headline: 'Define the outcome.\nLet solutions compete.\nShip the best.',
+    headline: 'From Goals to\nWorking AI Solutions.',
     intro: 'Bring your samples. Describe success. Build and try different executable approaches within your budget.',
     checkTitle: 'Check your foundation', checkDescription: 'Verify local storage and runtime. Results and task history survive a restart.',
     run: 'Run foundation check', scope: 'Infrastructure diagnostics only. Use task exploration above to compare real solutions and prepare a service.',
@@ -93,7 +95,9 @@ export const messages = {
     editingRevision: 'Editing a saved task. Saving will create a new revision and preserve the original.',
   },
   'zh-CN': {
-    settings: '设置', language: '语言', milestone: 'M7 / 可执行方案',
+    settings: '设置', language: '语言', milestone: '定义目标。让方案竞争。交付最佳方案。',
+    criteriaTitle: '可执行结构检查', criteriaPreparing: '正在根据训练输入准备检查；最终测试集保持封存。', criteriaUnreviewed: '模型提出的待审阅检查，仅验证结构；语义质量与人工校准尚未核验。',
+    criteriaCovered: '建议覆盖范围', criteriaUncovered: '尚未核验的语义要求', criteriaRaw: '查看结构规范与来源', criteriaPassed: '结构检查通过，规范尚未审阅。', criteriaFailed: '结构检查未通过，与标签/裁判质量分开记录。', criteriaUnavailable: '结构检查不可用，请展开查看配置或生成证据。',
     rulesFamily: '规则方案', pythonFamily: 'Python 程序', promptFamily: '模型提示方案', hybridFamily: '规则与模型', mlFamily: '已训练分类器', workflowFamily: '多步骤方案', agentFamily: '工具调用方案', selectedTool: '所选工具', finalAnswer: '最终输出',
     agent_step_limit: '已达决策次数上限，未返回最终输出。', agent_cancelled: '已在下一次模型或工具调用前取消。',
     invalid_agent_action: '模型选择了无效工具或返回格式。', invalid_agent_tool: '工具配置无效。', agent_tool_failed: '所选工具执行失败，已停止。',
@@ -113,7 +117,7 @@ export const messages = {
     service_request_id_conflict: '该请求编号已用于不同的输入。', service_request_not_replayable: '该请求曾失败或中断，不会自动重跑。',
     service_allowance_exceeds_budget: '独立服务额度超出了已授权的项目或搜索预算。',
     price_snapshot_requires_review: '再次付费调用前，需要复核模型价格。', root_search_budget_exhausted: '整棵搜索树的共享预算已用尽。',
-    headline: '定义目标。\n让方案竞争。\n交付最佳方案。',
+    headline: '从业务目标，\n到可运行的 AI 方案。',
     intro: '提供样本，描述成功标准，在预算内构建并试运行不同的可执行方案。',
     checkTitle: '检查基础设施', checkDescription: '验证本地存储与运行环境。结果与任务历史在重启后保留。',
     run: '运行基础检查', scope: '此处仅检查基础设施。请在上方任务探索中比较真实方案并准备服务。',

@@ -111,6 +111,8 @@ class SearchRepository:
                 execution['judge'] = json.loads(raw_judge) if raw_judge else None
                 raw_runtime = execution.pop('runtime_json')
                 execution['runtime'] = json.loads(raw_runtime) if raw_runtime else None
+                raw_criteria = execution.pop('criteria_json')
+                execution['criteria'] = json.loads(raw_criteria) if raw_criteria else None
             result['events'] = [dict(r) for r in db.execute('SELECT * FROM search_events WHERE search_id=? ORDER BY sequence', (search_id,))]
             for event in result['events']:
                 event['detail'] = json.loads(event.pop('detail_json'))
@@ -123,6 +125,8 @@ class SearchRepository:
             result['mutations'] = [dict(row) for row in db.execute('SELECT * FROM mutations WHERE search_id=?', (search_id,))]
             delivery = db.execute('SELECT id FROM deliveries WHERE search_id=?', (search_id,)).fetchone()
             result['delivery_id'] = delivery[0] if delivery else None
+            from .criteria import get_bundle
+            result['criteria_bundle'] = get_bundle(self, search_id)
         result['budget'] = self.ledger.status(search_id)
         result['scope_note'] = 'Real execution; provided-label agreement and uncalibrated judges are not verified accuracy. Selection evidence describes the search-time state; consult delivery for later final checks. No automatic public service release.'
         return result
@@ -273,11 +277,11 @@ class SearchRepository:
                 raise
         return self.add_candidate(search_id,candidate,provenance,candidate_id=candidate_id),candidate
 
-    def add_execution(self, search_id, candidate_id, index, output, error, latency, call_id, agreement, *, fidelity='smoke', split='exploration', judge=None, runtime=None):
+    def add_execution(self, search_id, candidate_id, index, output, error, latency, call_id, agreement, *, fidelity='smoke', split='exploration', judge=None, runtime=None, criteria=None):
         with self.store.connection(write=True) as db:
-            db.execute('INSERT INTO executions(search_id,candidate_id,sample_index,output_json,error,latency_ms,call_id,label_agreement,fidelity,split,judge_json,runtime_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
+            db.execute('INSERT INTO executions(search_id,candidate_id,sample_index,output_json,error,latency_ms,call_id,label_agreement,fidelity,split,judge_json,runtime_json,criteria_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',
                        (search_id, candidate_id, index, canonical_json(output) if error is None else None, error, latency, call_id, agreement,
-                        fidelity, split, canonical_json(judge) if judge else None, canonical_json(runtime) if runtime else None))
+                        fidelity, split, canonical_json(judge) if judge else None, canonical_json(runtime) if runtime else None, canonical_json(criteria) if criteria else None))
 
 
 def execute_search(repository, search_id, owner, gateway, registry=None, stop=None):
@@ -287,6 +291,8 @@ def execute_search(repository, search_id, owner, gateway, registry=None, stop=No
     task = repository.tasks.get_revision(record['task_id'], record['revision'])
     contract = task['contract']
     definition = contract['definition']
+    from .criteria import prepare_bundle
+    prepare_bundle(repository, record, contract, gateway)
     if record['protocol_version'] != 'm2':
         splits = partition_indices(contract)
         with repository.store.connection(write=True) as db:

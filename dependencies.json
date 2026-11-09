@@ -432,5 +432,207 @@
       ],
       "local_use_review": "reviewed pinned wheel and accompanying notices; no host install or image archive redistribution"
     }
+  ],
+  "optional_application_packages": [
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "spdx_license": "MIT",
+      "source": "https://pypi.org/project/jsonschema/4.26.0/",
+      "project_urls": {
+        "Changelog": "https://github.com/python-jsonschema/jsonschema/blob/main/CHANGELOG.rst",
+        "Documentation": "https://python-jsonschema.readthedocs.io/",
+        "Funding": "https://github.com/sponsors/Julian",
+        "Homepage": "https://github.com/python-jsonschema/jsonschema",
+        "Issues": "https://github.com/python-jsonschema/jsonschema/issues/",
+        "Source": "https://github.com/python-jsonschema/jsonschema",
+        "Tidelift": "https://tidelift.com/subscription/pkg/pypi-jsonschema?utm_source=pypi-jsonschema&utm_medium=referral&utm_campaign=pypi-link"
+      },
+      "requires_dist": [
+        "attrs>=22.2.0",
+        "jsonschema-specifications>=2023.03.6",
+        "referencing>=0.28.4",
+        "rpds-py>=0.25.0",
+        "fqdn; extra == \"format\"",
+        "idna; extra == \"format\"",
+        "isoduration; extra == \"format\"",
+        "jsonpointer>1.13; extra == \"format\"",
+        "rfc3339-validator; extra == \"format\"",
+        "rfc3987; extra == \"format\"",
+        "uri-template; extra == \"format\"",
+        "webcolors>=1.11; extra == \"format\"",
+        "fqdn; extra == \"format-nongpl\"",
+        "idna; extra == \"format-nongpl\"",
+        "isoduration; extra == \"format-nongpl\"",
+        "jsonpointer>1.13; extra == \"format-nongpl\"",
+        "rfc3339-validator; extra == \"format-nongpl\"",
+        "rfc3986-validator>0.1.0; extra == \"format-nongpl\"",
+        "rfc3987-syntax>=1.1.0; extra == \"format-nongpl\"",
+        "uri-template; extra == \"format-nongpl\"",
+        "webcolors>=24.6.0; extra == \"format-nongpl\""
+      ],
+      "artifacts": [
+        {
+          "filename": "jsonschema-4.26.0-py3-none-any.whl",
+          "sha256": "d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce",
+          "url": "https://files.pythonhosted.org/packages/69/90/f63fb5873511e014207a475e2bb4e8b2e570d655b00ac19a9a0ca0a385ee/jsonschema-4.26.0-py3-none-any.whl"
+        }
+      ],
+      "license_files": [
+        {
+          "path": "third_party/licenses/jsonschema-0-COPYING",
+          "sha256": "4f92a015a13c4d1a040bef018aa13430b4f1bc73b41b16bb846c346766de7439",
+          "upstream_wheel_path": "jsonschema-4.26.0.dist-info/licenses/COPYING"
+        }
+      ],
+      "scope": "optional_control_plane_schema_validation",
+      "distribution_duties": "Preserve upstream MIT copyright and license when redistributing incorporated software; wheels/native binaries are not bundled. rpds-py contains a native extension; do not relicense that binary or claim a full Rust/CVE audit."
+    },
+    {
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "spdx_license": "MIT",
+      "source": "https://pypi.org/project/jsonschema-specifications/2025.9.1/",
+      "project_urls": {
+        "Documentation": "https://jsonschema-specifications.readthedocs.io/",
+        "Funding": "https://github.com/sponsors/Julian",
+        "Homepage": "https://github.com/python-jsonschema/jsonschema-specifications",
+        "Issues": "https://github.com/python-jsonschema/jsonschema-specifications/issues/",
+        "Source": "https://github.com/python-jsonschema/jsonschema-specifications",
+        "Tidelift": "https://tidelift.com/subscription/pkg/pypi-jsonschema-specifications?utm_source=pypi-jsonschema-specifications&utm_medium=referral&utm_campaign=pypi-link"
+      },
+      "requires_dist": [
+        "referencing>=0.31.0"
+      ],
+      "artifacts": [
+        {
+          "filename": "jsonschema_specifications-2025.9.1-py3-none-any.whl",
+          "sha256": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe",
+          "url": "https://files.pythonhosted.org/packages/41/45/1a4ed80516f02155c51f51e8cedb3c1902296743db0bbc66608a0db2814f/jsonschema_specifications-2025.9.1-py3-none-any.whl"
+        }
+      ],
+      "license_files": [
+        {
+          "path": "third_party/licenses/jsonschema-specifications-0-COPYING",
+          "sha256": "42dcd63495f87b4eb7c7757afa379bb55a53f94afd7a5f657d9adf57236e515c",
+          "upstream_wheel_path": "jsonschema_specifications-2025.9.1.dist-info/licenses/COPYING"
+        }
+      ],
+      "scope": "optional_control_plane_schema_validation",
+      "distribution_duties": "Preserve upstream MIT copyright and license when redistributing incorporated software; wheels/native binaries are not bundled. rpds-py contains a native extension; do not relicense that binary or claim a full Rust/CVE audit."
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "spdx_license": "MIT",
+      "source": "https://pypi.org/project/attrs/26.1.0/",
+      "project_urls": {
+        "Changelog": "https://www.attrs.org/en/stable/changelog.html",
+        "Documentation": "https://www.attrs.org/",
+        "Funding": "https://github.com/sponsors/hynek",
+        "GitHub": "https://github.com/python-attrs/attrs",
+        "Tidelift": "https://tidelift.com/subscription/pkg/pypi-attrs?utm_source=pypi-attrs&utm_medium=pypi"
+      },
+      "requires_dist": [],
+      "artifacts": [
+        {
+          "filename": "attrs-26.1.0-py3-none-any.whl",
+          "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309",
+          "url": "https://files.pythonhosted.org/packages/64/b4/17d4b0b2a2dc85a6df63d1157e028ed19f90d4cd97c36717afef2bc2f395/attrs-26.1.0-py3-none-any.whl"
+        }
+      ],
+      "license_files": [
+        {
+          "path": "third_party/licenses/attrs-0-LICENSE",
+          "sha256": "882115c95dfc2af1eeb6714f8ec6d5cbcabf667caff8729f42420da63f714e9f",
+          "upstream_wheel_path": "attrs-26.1.0.dist-info/licenses/LICENSE"
+        }
+      ],
+      "scope": "optional_control_plane_schema_validation",
+      "distribution_duties": "Preserve upstream MIT copyright and license when redistributing incorporated software; wheels/native binaries are not bundled. rpds-py contains a native extension; do not relicense that binary or claim a full Rust/CVE audit."
+    },
+    {
+      "name": "referencing",
+      "version": "0.37.0",
+      "spdx_license": "MIT",
+      "source": "https://pypi.org/project/referencing/0.37.0/",
+      "project_urls": {
+        "Changelog": "https://referencing.readthedocs.io/en/stable/changes/",
+        "Documentation": "https://referencing.readthedocs.io/",
+        "Funding": "https://github.com/sponsors/Julian",
+        "Homepage": "https://github.com/python-jsonschema/referencing",
+        "Issues": "https://github.com/python-jsonschema/referencing/issues/",
+        "Source": "https://github.com/python-jsonschema/referencing",
+        "Tidelift": "https://tidelift.com/subscription/pkg/pypi-referencing?utm_source=pypi-referencing&utm_medium=referral&utm_campaign=pypi-link"
+      },
+      "requires_dist": [
+        "attrs>=22.2.0",
+        "rpds-py>=0.7.0",
+        "typing-extensions>=4.4.0; python_version < \"3.13\""
+      ],
+      "artifacts": [
+        {
+          "filename": "referencing-0.37.0-py3-none-any.whl",
+          "sha256": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231",
+          "url": "https://files.pythonhosted.org/packages/2c/58/ca301544e1fa93ed4f80d724bf5b194f6e4b945841c5bfd555878eea9fcb/referencing-0.37.0-py3-none-any.whl"
+        }
+      ],
+      "license_files": [
+        {
+          "path": "third_party/licenses/referencing-0-COPYING",
+          "sha256": "42dcd63495f87b4eb7c7757afa379bb55a53f94afd7a5f657d9adf57236e515c",
+          "upstream_wheel_path": "referencing-0.37.0.dist-info/licenses/COPYING"
+        }
+      ],
+      "scope": "optional_control_plane_schema_validation",
+      "distribution_duties": "Preserve upstream MIT copyright and license when redistributing incorporated software; wheels/native binaries are not bundled. rpds-py contains a native extension; do not relicense that binary or claim a full Rust/CVE audit."
+    },
+    {
+      "name": "rpds-py",
+      "version": "2026.9.1",
+      "spdx_license": "MIT",
+      "source": "https://pypi.org/project/rpds-py/2026.9.1/",
+      "project_urls": {
+        "Documentation": "https://rpds.readthedocs.io/",
+        "Funding": "https://github.com/sponsors/Julian",
+        "Homepage": "https://github.com/crate-py/rpds",
+        "Issues": "https://github.com/crate-py/rpds/issues/",
+        "Source": "https://github.com/crate-py/rpds",
+        "Tidelift": "https://tidelift.com/subscription/pkg/pypi-rpds-py?utm_source=pypi-rpds-py&utm_medium=referral&utm_campaign=pypi-link",
+        "Upstream": "https://github.com/orium/rpds"
+      },
+      "requires_dist": [],
+      "artifacts": [
+        {
+          "filename": "rpds_py-2026.9.1-cp313-cp313-macosx_10_12_x86_64.whl",
+          "sha256": "a36b70596407634ca82d4b989a3729074a008537a0522e4c8046a67c729103e9",
+          "url": "https://files.pythonhosted.org/packages/83/ea/ee88fd9e756ff93fb6b1182a47ec09504a242620e33ce1d20679efefe841/rpds_py-2026.9.1-cp313-cp313-macosx_10_12_x86_64.whl"
+        },
+        {
+          "filename": "rpds_py-2026.9.1-cp313-cp313-macosx_11_0_arm64.whl",
+          "sha256": "eba5d173f7d5708b22a93815017a4611873ed54db9f268077c0dd1ed99cfc858",
+          "url": "https://files.pythonhosted.org/packages/57/71/a097d6552f837500fc36e6b23d09cfb9890c3cc47531f9ca64e149799615/rpds_py-2026.9.1-cp313-cp313-macosx_11_0_arm64.whl"
+        },
+        {
+          "filename": "rpds_py-2026.9.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+          "sha256": "457866b85daf5034296666168b84a69e0b2e89dc4f1af102b46f6448a60b9063",
+          "url": "https://files.pythonhosted.org/packages/bd/b7/497e85768bf4e0d8ddbaa096a4cac31d1509251dee2728a8490aa367e0b5/rpds_py-2026.9.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+        },
+        {
+          "filename": "rpds_py-2026.9.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+          "sha256": "7868b85224291c6cb6759f9b5adb9745f486d226f62b16a614dd5a2a5ab2b35b",
+          "url": "https://files.pythonhosted.org/packages/a0/36/76fab39973ee11e7f9f357c55138197bb01c86f6502cb76487e3b4f42db0/rpds_py-2026.9.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+        }
+      ],
+      "license_files": [
+        {
+          "path": "third_party/licenses/rpds-py-0-LICENSE",
+          "sha256": "314e4e91be3baa93c0fb4bccc9e4e97cd643eb839b065af921782c2175fe9909",
+          "upstream_wheel_path": "rpds_py-2026.9.1.dist-info/licenses/LICENSE"
+        }
+      ],
+      "scope": "optional_control_plane_schema_validation",
+      "distribution_duties": "Preserve upstream MIT copyright and license when redistributing incorporated software; wheels/native binaries are not bundled. rpds-py contains a native extension; do not relicense that binary or claim a full Rust/CVE audit."
+    }
   ]
 }

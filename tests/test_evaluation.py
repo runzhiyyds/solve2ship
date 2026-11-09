@@ -68,7 +68,7 @@ class EvaluationIntegrationTests(unittest.TestCase):
         self.repository = SearchRepository(self.store)
         self.repository.ledger.configure('work', 100 * MICRO)
         self.provider = ProviderFixture(); self.addCleanup(self.provider.close)
-        date = patch('solve2ship.gateway.time.strftime', return_value='2026-11-08'); date.start(); self.addCleanup(date.stop)
+        date = patch('solve2ship.gateway.time.strftime', return_value='2026-11-09'); date.start(); self.addCleanup(date.stop)
 
     def run_task(self, definition):
         saved = TaskRepository(self.store).save(definition, compile_task(definition)['content_sha256'])
