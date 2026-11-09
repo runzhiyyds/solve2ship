@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: '24.14.1'
       - run: make check
-      - run: python3 -m pip install --only-binary=:all: --require-hashes -r requirements/schema.lock
+      - run: 'python3 -m pip install --only-binary=:all: --require-hashes -r requirements/schema.lock'
       - run: make check-schema
       - run: python3 scripts/check_repository.py --public --release
   publish:
