@@ -208,6 +208,7 @@ class CriteriaRepositoryTests(unittest.TestCase):
         self.gateway.json('Protocol fixture', 'cancel', purpose='fixture_inference', max_tokens=32)
         before = self.repository.ledger.status()['committed_ceiling_cny']
         with self.store.connection(write=True) as db:
+            db.execute('DROP TABLE quality_review_events'); db.execute('DROP TABLE delivery_quality_decisions')
             db.execute('DROP TABLE criteria_bundles'); db.execute('DROP TABLE criteria_attempts')
             db.execute('ALTER TABLE executions DROP COLUMN criteria_json'); db.execute('PRAGMA user_version=12')
         migrated = SearchRepository(Store(self.path))

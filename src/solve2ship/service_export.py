@@ -48,6 +48,7 @@ def export_service(store, delivery_id):
     original = Path(delivery['draft_path'])
     family=delivery['frozen']['candidate']['family']
     needs_model=model_required(family,delivery['frozen']['candidate']['artifact'])
+    required_version = 4 if delivery['report'].get('quality_mode')=='operator_review' else (3 if needs_model else 2)
     needs_docker=family in ('python.v1','workflow.v1','sklearn.classifier.v1','agent.tools.v1')
     if hashlib.sha256((original/'manifest.json').read_bytes()).hexdigest() != delivery['proof']['manifest_sha256']:
         raise DeliveryError('frozen_serving_proof_mismatch')
@@ -56,7 +57,7 @@ def export_service(store, delivery_id):
     # Serialize local file publication/receipt; no model call, network or image build.
     with store.connection(write=True) as db:
         existing = db.execute('SELECT receipt_json FROM service_export_versions WHERE delivery_id=? ORDER BY created_at DESC LIMIT 1', (delivery_id,)).fetchone()
-        if existing and json.loads(existing[0]).get('export_template_version',1)>=(3 if needs_model else 2):
+        if existing and json.loads(existing[0]).get('export_template_version',1)>=required_version:
             identifier = json.loads(existing[0])['id']
         else:
             identifier = uuid.uuid4().hex
@@ -188,6 +189,7 @@ local developer service on loopback; no production tenancy/cloud hosting is clai
                     'frozen_manifest_sha256': delivery['proof']['manifest_sha256'],
                     'independent_startup_proof': delivery['proof'],
                     'final_report_summary':{key:delivery['report'][key] for key in ('split','count','provided_label_matches','label_source','quality_is_verified_accuracy','gate_passed')},
+                    'quality_review_summary':{key:delivery['report'].get(key) for key in ('quality_mode','review_state','accepted_review_count','review_evidence_sha256','human_identity_verified')},
                     'final_report_sha256':hashlib.sha256(canonical_json(delivery['report']).encode()).hexdigest(),
                     'runtime_reference': image if needs_docker or family=='rules.v1' else {'kind':'installed_cpython','version_requirement':'3.13+'}, 'application_packages': [], 'copied_upstream_sources': [],
                     'runtime_inventory': json.loads(inventory.read_text()) if inventory.is_file() else None,
@@ -216,7 +218,7 @@ local developer service on loopback; no production tenancy/cloud hosting is clai
             receipt = {'id':identifier,'delivery_id':delivery_id,'created_at':time.time(),'license':'Apache-2.0',
                 'archive_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),
                 'distribution_scope':'local_application_source_bundle','credential_pattern_checks_passed':True,
-                'export_template_version':3 if needs_model else 2,
+                'export_template_version':required_version,
                 'image_archive_distributed':False,'publicly_published':False}
             db.execute('INSERT INTO service_export_versions VALUES(?,?,?,?)',(identifier,delivery_id,time.time(),canonical_json(receipt)))
     return exported_service(store,delivery_id)

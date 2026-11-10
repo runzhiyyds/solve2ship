@@ -28,7 +28,7 @@ STS starts with the desired outcome and explores how to achieve it. A workflow o
 
 ## Are labels required? Can the system infer business truth from a goal?
 
-Labels are optional for starting exploration. When labels exist, the preview reports agreement with those provided labels and does not certify them. Without labels, model-judge scores are uncalibrated proxies. Independent final delivery currently requires supported quality checks; a free-text goal does not automatically provide trustworthy ground truth. The v0.13.0 preview adds bounded structural checks with explicit unreviewed provenance. Human calibration, semantic quality checks and general executable criteria remain unfinished.
+Labels are optional for starting exploration. When labels exist, the preview reports agreement with those provided labels and does not certify them. Without labels, model-judge scores are uncalibrated proxies. Independent final delivery currently requires supported quality checks; a free-text goal does not automatically provide trustworthy ground truth. The v0.13.0 preview adds bounded structural checks with explicit unreviewed provenance. v0.14 adds self-attested output reviews and an explicit once-only final review path. Descriptive judge agreement is not calibrated pruning; authenticated truth, broad semantic checks and general executable criteria remain unfinished.
 
 中文：没有标签可以开始探索，但自然语言目标不会自动变成真值。没有可靠评价时，不能把裁判分包装为准确率，也不能跳过最终质量门禁。
 
@@ -74,3 +74,14 @@ and interrupted attempts are preserved rather than silently regenerated.
 
 中文：可执行结构检查可验证字段、类型、枚举和数值范围，并显示来源与遗漏；模型提出的
 规范仍未审阅，不能证明语义正确、替代质量证据或绕过最终交付门禁。
+
+
+### Can my local agent use STS without opening Studio?
+
+Yes. The separately released sts-skills v0.2 bridge connects to an installed loopback
+STS engine for task/evidence/review/service operations. It defaults to read-only,
+requires existing budgets and explicit paid commands, and never invents user approval.
+It does not bundle the engine, model or isolated runtime. [Headless guide](https://github.com/runzhiyyds/sts-skills/blob/main/docs/HEADLESS.md).
+
+中文：本地 Agent 可通过配套技能的无前端连接工具调用 STS；仍需已有引擎、凭据、预算与
+安全执行环境。付费操作须明确授权，真实用户判断不能由 Agent 自动生成。

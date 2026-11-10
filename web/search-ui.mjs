@@ -1,4 +1,5 @@
 import { errorText } from './i18n.mjs';
+import { initializeReviews,reviewMetric } from './reviews-ui.mjs';
 
 const $ = (id) => document.getElementById(id);
 
@@ -74,6 +75,7 @@ export function funnelStages(record) {
 
 export function initializeSearch({ api, t, taskUI, renderRoot }) {
   let searches = [], selected = null, budget = null, pending = false, message = '', listKey = '', resultKey = '', followActive = false, lineage = null, graphKey = '', criteriaKey = '', delivery = null;
+  const reviews=initializeReviews({api,t,onChange:refresh});
   function render() {
     const task = taskUI.selected();
     $('search-section').hidden = !task;
@@ -99,9 +101,14 @@ export function initializeSearch({ api, t, taskUI, renderRoot }) {
       const winner = selected.candidates.find((row) => row.id === selected.selection?.candidate_id);
       const needsModelServing=['prompt.v1','hybrid.v1','agent.tools.v1'].includes(winner?.family)||(winner?.family==='workflow.v1' && winner.artifact.steps.some(step=>step.family==='prompt.v1'));
       $('delivery-section').hidden = selected.state !== 'succeeded' || !['rules.v1','python.v1','sklearn.classifier.v1','workflow.v1','prompt.v1','hybrid.v1','agent.tools.v1'].includes(winner?.family);
+      const finalIndices=selected.partitions.filter(r=>r.split==='final_test').map(r=>r.sample_index), labelled=new Set(task.contract.definition.labels.map(r=>r.sample_index));
+      const needsOperator=finalIndices.some(i=>!labelled.has(i));
+      $('prepare-delivery').hidden=needsOperator;
+      $('prepare-review-delivery').hidden=!needsOperator||!!delivery;
+      $('prepare-review-delivery').disabled=pending;
       $('prepare-delivery').disabled = pending || !!delivery;
       $('delivery-status').textContent = delivery ? t(delivery.export?.archive_integrity_verified ? 'local_export_ready' : delivery.state) : needsModelServing?t('modelServingReady'):'';
-      $('delivery-metrics').textContent = delivery?.report ? `${t('deliveryChecks')}: ${delivery.report.provided_label_matches}/${delivery.report.count}. ${t(delivery.draft_integrity_verified && delivery.proof?.status === 'passed' ? 'serviceVerified' : 'serviceNotVerified')}` : '';
+      $('delivery-metrics').textContent = delivery?.report ? delivery.report.review_state==='pending'?`${t('finalExamplesRecorded')}: ${delivery.report.count}`:`${reviewMetric(delivery.report,t)}. ${t(delivery.draft_integrity_verified && delivery.proof?.status === 'passed' ? 'serviceVerified' : 'serviceNotVerified')}` : '';
       $('export-service').hidden = !delivery?.draft_integrity_verified || delivery?.proof?.status !== 'passed' || !!delivery?.export;
       $('export-service').disabled = pending;
       $('download-service').hidden = !delivery?.export?.archive_integrity_verified;
@@ -171,6 +178,7 @@ export function initializeSearch({ api, t, taskUI, renderRoot }) {
         }));
       }
     }
+    reviews.render(visible?selected:null,delivery);
     const filtered = searches.filter((row) => row.task_id === task?.task_id);
     const nextListKey = JSON.stringify([filtered, t('succeeded')]);
     if (listKey !== nextListKey) {
@@ -233,13 +241,15 @@ export function initializeSearch({ api, t, taskUI, renderRoot }) {
     catch (error) { message = error.code || 'error'; }
     finally { pending = false; await refresh(); }
   };
-  $('prepare-delivery').onclick = async () => {
+  async function prepareDelivery(operator=false) {
     if (pending || !selected || delivery) return;
     pending = true; message = ''; renderRoot();
-    try { delivery = await api(`/api/searches/${selected.id}/delivery`,{request_id:crypto.randomUUID().replaceAll('-','')}); }
+    try { delivery = await api(`/api/searches/${selected.id}/delivery`,{request_id:crypto.randomUUID().replaceAll('-',''),...(operator?{quality_mode:'operator_review'}:{})}); }
     catch (error) { message = error.code || 'error'; }
-    finally { pending = false; await refresh(); }
-  };
+    finally { pending = false; await refresh();await reviews.refresh(); }
+  }
+  $('prepare-delivery').onclick=()=>prepareDelivery();
+  $('prepare-review-delivery').onclick=()=>prepareDelivery(true);
   $('rollback-search').onclick = () => act(`/api/searches/${selected.id}/rollback`);
   return { render, refresh };
 }

@@ -13,6 +13,7 @@ from .contracts import canonical_json, sha256
 from .evaluation import partition_indices
 from .gateway import BudgetError,ModelGateway,ProviderError,PRICING_VERIFIED_DATE,CONTEXT_CEILING,INPUT_RATE,OUTPUT_RATE
 from .invocation import CallTraceGateway,invocation_runtime
+from .reviews import effective_report
 from .search import SearchRepository
 
 
@@ -51,6 +52,7 @@ class DeliveryRepository:
             for table, key, column in [('delivery_reports', 'report', 'report_json'), ('delivery_proofs', 'proof', 'proof_json')]:
                 result = db.execute(f'SELECT {column} FROM {table} WHERE delivery_id=?', (delivery_id,)).fetchone()
                 value[key] = json.loads(result[0]) if result else None
+            value['report'] = effective_report(db, delivery_id, value['report'])
         root = self.draft_root / delivery_id
         intact = False
         try:
@@ -62,6 +64,7 @@ class DeliveryRepository:
         except (OSError, ValueError, KeyError, TypeError):
             pass
         value['state'] = ('interrupted_or_in_progress' if not value['report'] else
+                          'awaiting_operator_review' if value['report'].get('review_state') == 'pending' else
                           'final_checks_failed' if not value['report']['gate_passed'] else
                           'private_draft_ready' if intact else 'private_draft_incomplete')
         from .service_export import exported_service, license_review
@@ -82,11 +85,15 @@ class DeliveryRepository:
             row = db.execute('SELECT id FROM deliveries WHERE search_id=?', (search_id,)).fetchone()
         return self.get(row[0]) if row else None
 
-    def prepare(self, search_id, request_id):
+    def prepare(self, search_id, request_id, *, quality_mode='provided_labels'):
+        if quality_mode not in ('provided_labels', 'operator_review'):
+            raise DeliveryError('invalid_quality_mode')
         if type(request_id) is not str or not re.fullmatch('[0-9a-f]{32}', request_id):
             raise DeliveryError('invalid_delivery_request')
         existing=self.for_search(search_id)
         if existing:
+            if existing['frozen'].get('quality_mode','provided_labels') != quality_mode:
+                raise DeliveryError('frozen_quality_mode_conflict')
             with self.store.connection() as db:
                 conflict=db.execute('SELECT search_id FROM deliveries WHERE request_id=?',(request_id,)).fetchone()
             if conflict and conflict[0]!=search_id:raise DeliveryError('delivery_idempotency_conflict')
@@ -146,19 +153,25 @@ class DeliveryRepository:
         if not unique:
             raise DeliveryError('independent_final_data_required')
         labels = {row['sample_index']: row['expected_output'] for row in contract['definition']['labels']}
-        if any(index not in labels for index in unique.values()):
+        if quality_mode == 'provided_labels' and any(index not in labels for index in unique.values()):
             raise DeliveryError('final_quality_checks_or_human_review_required')
         label_groups = {}
         for index, output in labels.items():
             label_groups.setdefault(sha256(contract['definition']['samples'][index]), set()).add(canonical_json(output))
-        if any(len(label_groups[digest]) != 1 for digest in unique):
+        if any(digest in label_groups and len(label_groups[digest]) != 1 for digest in unique):
             raise DeliveryError('conflicting_final_labels')
+        from .reviews import ReviewRepository
+        review_packet=ReviewRepository(self.store).packet(search_id)
+        review_snapshot={'summary':review_packet['summary'],'review_events_sha256':sha256(review_packet['events']),
+                         'review_ids':[e['id'] for e in review_packet['events']]}
         delivery_id = uuid.uuid4().hex
         with self.store.connection(write=True) as db:
-            existing = db.execute('SELECT id,search_id FROM deliveries WHERE request_id=? OR search_id=?', (request_id, search_id)).fetchone()
+            existing = db.execute('SELECT id,search_id,frozen_json FROM deliveries WHERE request_id=? OR search_id=?', (request_id, search_id)).fetchone()
             if existing:
                 if existing['search_id'] != search_id:
                     raise DeliveryError('delivery_idempotency_conflict')
+                if json.loads(existing['frozen_json']).get('quality_mode','provided_labels') != quality_mode:
+                    raise DeliveryError('frozen_quality_mode_conflict')
                 delivery_id = existing['id']
             else:
                 exposed = {row[0] for row in db.execute('SELECT input_sha256 FROM final_quarantine')}
@@ -178,7 +191,9 @@ class DeliveryRepository:
                           'selection_evidence': selection['evidence'], 'frozen_before_final_execution': True,
                           'output_specification': contract['definition']['output_specification'],
                           'input_schema': contract['dataset']['input_schema'], 'semantic_output_schema': 'unconfirmed',
-                          'runtime_configuration':runtime_configuration}
+                          'runtime_configuration':runtime_configuration, 'quality_mode':quality_mode,
+                          'criteria_bundle': source.get('criteria_bundle'), 'validation_review_snapshot':review_snapshot,
+                          'review_policy':'all_successful_final_outputs_explicitly_accepted_v1' if quality_mode=='operator_review' else None}
                 db.execute('INSERT INTO deliveries VALUES(?,?,?,?,?,?,?,?)',
                            (delivery_id, request_id, search_id, candidate['id'], source['task_id'], source['revision'], time.time(), canonical_json(frozen)))
                 if needs_model:
@@ -200,7 +215,7 @@ class DeliveryRepository:
             try:
                 output, call_id = adapter.execute(candidate['artifact'], contract['definition']['samples'][index], calls)
                 calls.remember(call_id)
-                agreement=int(canonical_json(output)==canonical_json(labels[index]))
+                agreement=int(canonical_json(output)==canonical_json(labels[index])) if quality_mode=='provided_labels' else None
             except ArtifactError as exception:
                 error=str(exception)
             except (ProviderError,BudgetError) as exception:
@@ -209,9 +224,10 @@ class DeliveryRepository:
                                  'runtime':invocation_runtime(adapter,calls.call_ids),'model_call_ids':calls.call_ids,
                                  'latency_ms': (time.perf_counter() - started)*1000})
         report = {'split': 'final_test_once', 'observations': observations,
-                  'provided_label_matches': sum(row['label_agreement'] or 0 for row in observations), 'count': len(observations),
-                  'gate_passed': all(row['label_agreement'] for row in observations),
-                  'label_source': 'provided_labels_unverified', 'quality_is_verified_accuracy': False,
+                  'quality_mode': quality_mode,
+                  'provided_label_matches': sum(row['label_agreement'] or 0 for row in observations) if quality_mode=='provided_labels' else None, 'count': len(observations),
+                  'gate_passed': quality_mode=='provided_labels' and all(row['label_agreement'] for row in observations),
+                  'label_source': 'provided_labels_unverified' if quality_mode=='provided_labels' else 'self_attested_operator_review_pending', 'quality_is_verified_accuracy': False,
                   'small_sample_generalization_unknown': True, 'used_for_tuning': False,
                   'model_calls':sum(len(row['model_call_ids']) for row in observations)}
         with self.store.connection(write=True) as db:

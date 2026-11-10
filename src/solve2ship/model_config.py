@@ -20,7 +20,7 @@ class ModelProfile:
     api_key: str = field(repr=False)
 
     def status(self):
-        return {"configured": True, "base_url": self.base_url, "model": self.model,
+        return {"configured": True, "base_url": self.base_url.replace(self.api_key,"[REDACTED]"), "model": self.model.replace(self.api_key,"[REDACTED]"),
                 "api_key_configured": bool(self.api_key), "connection_verified": False}
 
 

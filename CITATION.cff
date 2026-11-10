@@ -6,8 +6,8 @@ abstract: "An open-source AI-native solution engineering project exploring Goal-
 authors:
   - family-names: Guo
     given-names: Chenyuan
-version: 0.13.0
-date-released: 2026-11-09
+version: 0.14.0
+date-released: 2026-11-10
 url: "https://github.com/runzhiyyds/solve2ship"
 repository-code: "https://github.com/runzhiyyds/solve2ship"
 license: Apache-2.0

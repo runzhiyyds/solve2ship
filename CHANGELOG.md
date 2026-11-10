@@ -1,5 +1,35 @@
 # Changelog / 版本变动
 
+## v0.14.0 — 2026-11-10 — Operator review / 操作者复核
+
+### English
+
+- Explicit unlabeled final review: freeze the selected artifact/policy, execute
+  sealed inputs once, close its paid scope and await snapshot-bound user judgments.
+  Append-only amendments and one immutable completion decision fence stale writes,
+  duplicate requests and final replay. Existing label/hard-constraint guards remain.
+- English/Chinese review controls and a redacted model-status API support Studio
+  and the separate sts-skills headless bridge. Exports retain minimal acceptance
+  provenance, without reviewer names/comments. No new dependency.
+- 178 Python tests with optional schema dependencies (base 167 passed/11 explicit
+  skips), seven Node tests. The owner accepted all four real final outputs of a
+  synthetic Chinese Rules task; private and exported services each passed six HTTP
+  cases, with zero new model calls. Self-attested acceptance is not verified accuracy.
+- See [release notes](docs/releases/v0.14.0.md) for evidence and limits. Broader semantic
+  calibration, authenticated review, general harness/optimizer and production remain open.
+
+### 简体中文
+
+- 无标签最终复核：显式冻结方案与规则，封存输入只执行一次，关闭付费范围后等待用户
+  判断。追加式修订和一次完成决定防止陈旧写入、重复请求与最终重跑，保留原标签/硬约束门禁。
+- 中英复核界面及脱敏模型状态接口同时支持 Studio 与独立 sts-skills 无界面桥接。
+  导出仅保留最小接受来源，不含复核者姓名/评论；不新增依赖。
+- 安装可选依赖后通过 178 项 Python、7 项前端测试（基础环境 167 项通过、11 项明确跳过）。
+  所有者接受真实合成中文规则任务的四条最终输出，私有及导出服务各通过六条 HTTP 检查；
+  未新增模型调用。自行声明的接受不是已验证准确率。
+- 详见[发布说明](docs/releases/v0.14.0.md)。广泛语义校准、身份认证、通用 Harness/优化器
+  和生产能力仍待建设。
+
 ## v0.13.0 — 2026-11-09 — Executable criteria / 可执行评测规范
 
 

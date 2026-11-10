@@ -82,3 +82,21 @@ Use a fresh authorized run when recording; screenshots and illustrative examples
 - How should a search preserve promising but uncertain candidates without wasting budget?
 
 These are questions under investigation, not published findings. For quotations or experiment claims, link to [versioned software citation](../CITATION.cff) and [case boundaries](USE_CASES.md). Clear definitions, source links and precise evidence help readers and search systems understand the project; they do not guarantee ranking, recommendation or citation by a search/AI platform.
+
+
+## v0.14 evidence story / 可复用技术案例
+
+**Draft, not posted.** What should happen when a task has no labels? Solve2Ship
+freezes the selected solution before exposing final outputs, asks the operator to
+judge concrete results, and records that opinion separately from automated scores.
+In one small synthetic Chinese routing task, the owner accepted four real final
+outputs. The unchanged Rules artifact then passed independent local HTTP and
+source-ZIP/container checks. No new model calls, claimed accuracy or final-data
+retuning. The design question is how to make user judgment useful without pretending
+it is certified truth. [Evidence and limitations](releases/v0.14.0.md).
+
+**传播草稿，尚未发布。** 没有标签的任务如何交付？Solve2Ship 先冻结方案，再展示最终
+输出，让使用者直接判断具体结果，并把意见与自动评分分开记录。一个小型合成中文
+路由案例中，所有者接受四条真实最终输出；未改动的规则产物继续通过本机独立 HTTP
+及源码 ZIP/容器检查。没有新增模型调用、不宣称准确率、不用最终数据调优。研究问题
+是：如何让业务判断参与交付，又不把它冒充已认证的真值？

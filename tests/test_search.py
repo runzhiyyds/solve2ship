@@ -156,6 +156,8 @@ class BillingTests(unittest.TestCase):
             db.execute('DROP TABLE service_exports')
             db.execute('DROP TABLE service_export_versions')
             db.execute('DROP TABLE service_budget_grants')
+            db.execute('DROP TABLE quality_review_events')
+            db.execute('DROP TABLE delivery_quality_decisions')
             db.execute('DROP TABLE criteria_attempts')
             db.execute('DROP TABLE criteria_bundles')
             db.execute('ALTER TABLE executions DROP COLUMN criteria_json')

@@ -16,6 +16,11 @@ def profile():
 
 
 class ModelConfigTests(unittest.TestCase):
+    def test_status_redacts_secret_even_if_mistyped_into_model_or_url_path(self):
+        data=profile(); data['model']=data['api_key'];data['base_url']+='/' + data['api_key']
+        self.assertNotIn(data['api_key'],json.dumps(validate_profile(data).status()))
+
+
     def test_saved_file_is_owner_only_and_status_never_returns_secret(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / '.sts/model.json'

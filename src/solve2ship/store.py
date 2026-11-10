@@ -11,7 +11,7 @@ import uuid
 
 
 TERMINAL = {"succeeded", "failed", "cancelled"}
-SCHEMA_VERSION = 13
+SCHEMA_VERSION = 14
 
 
 class Store:
@@ -293,6 +293,25 @@ class Store:
                         CREATE TRIGGER criteria_bundles_no_delete BEFORE DELETE ON criteria_bundles
                         BEGIN SELECT RAISE(ABORT,'criteria bundles are immutable'); END;
                         PRAGMA user_version=13;
+                    """)
+                    version = 13
+                if version == 13:
+                    self.migrate(db,"""
+                        CREATE TABLE quality_review_events(id TEXT PRIMARY KEY,request_id TEXT NOT NULL UNIQUE,request_sha256 TEXT NOT NULL,
+                            created_at REAL NOT NULL,search_id TEXT NOT NULL REFERENCES searches(id),subject_kind TEXT NOT NULL,
+                            execution_id INTEGER REFERENCES executions(id),delivery_id TEXT REFERENCES deliveries(id),sample_index INTEGER NOT NULL,
+                            snapshot_sha256 TEXT NOT NULL,previous_review_id TEXT REFERENCES quality_review_events(id),review_json TEXT NOT NULL);
+                        CREATE TABLE delivery_quality_decisions(delivery_id TEXT PRIMARY KEY REFERENCES deliveries(id),request_id TEXT NOT NULL UNIQUE,
+                            request_sha256 TEXT NOT NULL,created_at REAL NOT NULL,decision_json TEXT NOT NULL);
+                        CREATE TRIGGER reviews_no_update BEFORE UPDATE ON quality_review_events
+                        BEGIN SELECT RAISE(ABORT,'quality reviews are immutable'); END;
+                        CREATE TRIGGER reviews_no_delete BEFORE DELETE ON quality_review_events
+                        BEGIN SELECT RAISE(ABORT,'quality reviews are immutable'); END;
+                        CREATE TRIGGER quality_decisions_no_update BEFORE UPDATE ON delivery_quality_decisions
+                        BEGIN SELECT RAISE(ABORT,'quality decisions are immutable'); END;
+                        CREATE TRIGGER quality_decisions_no_delete BEFORE DELETE ON delivery_quality_decisions
+                        BEGIN SELECT RAISE(ABORT,'quality decisions are immutable'); END;
+                        PRAGMA user_version=14;
                     """)
                 db.commit()
             except BaseException:

@@ -38,6 +38,18 @@ class ProviderError(RuntimeError):
         super().__init__(code)
 
 
+def effective_report(db, delivery_id, report):
+    if not report or report.get('quality_mode') != 'operator_review':
+        return report
+    row = db.execute('SELECT decision_json FROM delivery_quality_decisions WHERE delivery_id=?', (delivery_id,)).fetchone()
+    if row:
+        decision = json.loads(row[0])
+        return {**report, 'gate_passed': decision['gate_passed'], 'review_state': 'accepted' if decision['gate_passed'] else 'rejected',
+                'accepted_review_count': decision['accepted_review_count'], 'review_evidence_sha256': decision['review_evidence_sha256'],
+                'operator_attestation': True, 'human_identity_verified': False, 'label_source':'self_attested_operator_review'}
+    return {**report, 'review_state': 'pending', 'accepted_review_count': 0}
+
+
 class Ledger:
     def __init__(self, store):
         self.store = store
@@ -87,7 +99,7 @@ class Ledger:
         if type(amount_micro) is not int or amount_micro<=0:raise BudgetError('invalid_service_allowance')
         with self.store.connection(write=True) as db:
             delivery=db.execute('SELECT d.search_id,r.report_json FROM deliveries d JOIN delivery_reports r ON r.delivery_id=d.id WHERE d.id=?',(delivery_id,)).fetchone()
-            if delivery is None or not json.loads(delivery['report_json'])['gate_passed']:raise BudgetError('final_gate_required')
+            if delivery is None or not effective_report(db,delivery_id,json.loads(delivery['report_json']))['gate_passed']:raise BudgetError('final_gate_required')
             existing=db.execute('SELECT * FROM service_budget_grants WHERE delivery_id=?',(delivery_id,)).fetchone()
             if existing:
                 if existing['amount_micro']!=amount_micro:raise BudgetError('service_allowance_conflict')

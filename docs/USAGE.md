@@ -160,3 +160,41 @@ independent executable quality criteria/human calibration, not just a model judg
 依赖。新探索只向标准生成器提供训练输入和目标，整个搜索树冻结同一份检查；检查不随
 验证或最终反馈偷偷变化。可展开查看来源、覆盖/遗漏、逐条通过与错误。模型提出的标准
 仍未审阅，结构通过不能当作真实准确率，也不会绕过尚未支持的最终质量门禁。
+
+
+## Quality review without labeling a dataset / 无需逐条标注数据集的质量复核
+
+Review example quality opens actual validation outputs, your saved judgments and a
+strictly descriptive comparison with model-judge scores. Provide a local reviewer
+identifier and personally confirm the displayed outputs. Acceptable / Needs
+correction / Cannot judge are separate from labels and measured accuracy. Changing
+a saved opinion requires a reason; its previous record remains inspectable.
+
+For an unlabeled task, explicitly choose Freeze this leader and prepare final examples
+for my review. This is a real one-time final execution, not a preview that can be
+repeated. The frozen artifact, criterion/policy and final input quarantine remain
+fixed; paid final scope closes as soon as execution ends. Review each displayed final
+output and complete the decision once. Every successful output must be explicitly
+accepted. Missing/uncertain/rejected opinions or runtime errors cannot pass. A closed
+acceptance/rejection cannot be changed or reopened; exposed inputs cannot tune a
+new candidate. The default label-based gate and unsupported hard constraints remain.
+
+Operator identity is self-declared on this owner-local development tool, not verified
+human truth. Accepted examples do not establish general business accuracy. Independent
+startup/file/license checks still gate source export. Exported provenance records
+acceptance source/count/hash, not reviewer identity/comments. Never enter keys or
+sensitive data in review notes. Installing a skill does not grant money or resources.
+
+The companion sts-skills v0.2 supplies a headless local-engine client: status and
+results are read-only by default; paid exploration/final execution require explicit
+commands and existing authorization. Review packets are owner-only files; submitted
+answers must come from actual user judgments, never agent-generated approvals.
+See the [headless guide](https://github.com/runzhiyyds/sts-skills/blob/main/docs/HEADLESS.md).
+
+中文：展开“复核样例”即可用业务语言判断实际输出，不用先逐条标注全部数据。填写本机
+复核标识并确认已亲自检查；更正旧判断须说明原因并保留历史。无标签任务可明确选择
+“冻结此方案，准备最终样例交给我复核”；这会真实使用一次最终输入，不能反复试跑。
+每条结果须成功并被明确接受，才能完成质量决定并继续独立服务/许可/导出检查；拒绝、
+缺评、无法判断或执行错误不能通过。决定关闭后不再改票，也不能用已暴露样例继续优化。
+这只是操作者自行声明的业务判断，不是身份认证或普遍准确率。复核评论不要填写密钥或
+敏感信息；源码导出只保留最小接受来源/数量/哈希，不带身份或评论。

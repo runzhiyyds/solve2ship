@@ -63,3 +63,20 @@ skill is agent guidance/tooling, not a fully bundled execution engine.
 中文：M8.1 先用训练输入冻结待审阅的输出结构规范，再评测候选；检查、标签和裁判分别
 留痕。整树继承、并发防重复、失败/未知费用保留；最终质量门禁不放宽。Studio 与独立
 sts-skills 是两种入口，技能不自带完整执行引擎或安全环境。
+
+v0.14 adds an explicit operator-review delivery mode for unlabeled tasks. The
+artifact, criteria and review policy freeze before once-only final execution;
+an immutable pending report immediately seals its paid scope. Snapshot-bound
+per-case reviews and one completion decision are append-only. All successful
+outputs must be explicitly accepted before draft construction and normal independent
+startup/license/export checks. Identity is self-attested, not authenticated truth.
+Validation reviews are descriptive feedback only; final reviews never enter edits.
+Source bundles retain only minimal acceptance provenance, without review comments
+or identities. The optional companion bridge exposes the same local API to agents,
+with saved operation receipts and explicit resource/feedback boundaries.
+
+中文：v0.14 显式启用无标签任务的操作者交付复核。先冻结、再一次性执行并立即关闭
+付费范围；逐条意见绑定输入/输出/产物快照，最终决定只能完成一次。所有成功输出被
+明确接受后才进入独立启动、许可与导出检查。身份仅为自行声明，不能视作准确率。
+最终意见不回流修改；包内不含复核者身份或评论。配套桥接工具让本地 Agent 使用相同
+接口和持久化操作回执，保留资源授权与真实用户判断边界。

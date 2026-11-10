@@ -10,7 +10,7 @@
 
 A task may need rules, a short Python program, a trained model, a prompt or a tool-using workflow. STS treats these as competing approaches. It selects using the available quality evidence, measured inference cost and latency; an agent does not receive a preference for being an agent.
 
-**v0.13.0 engineering preview · [Apache-2.0](LICENSE).** The current implementation runs locally and supports a bounded set of candidate families. The complete autonomous engineering platform remains a development goal.
+**v0.14.0 engineering preview · [Apache-2.0](LICENSE).** The current implementation runs locally and supports a bounded set of candidate families. The complete autonomous engineering platform remains a development goal.
 
 ## How Goal-to-Service works
 
@@ -35,7 +35,7 @@ The search loop has real outputs, failures, revisions and stop conditions. Final
 | Task definition | JSON/JSONL samples, natural-language outcome, optional labels and constraints; immutable revisions | Broader data intake and general natural-language constraint enforcement |
 | Competing solutions | Rules, Prompt, Hybrid, isolated Python, numeric scikit-learn, bounded workflows and experimental tool-use agents | General skills, multi-agent systems, harnesses and broader ML |
 | Eval-driven optimization | Optional frozen JSON Schema checks with unreviewed provenance; grouped splits, common-case evaluation, cost/latency receipts, bounded edits, conservative pruning and rollback | Calibrated evaluators and mature optimizer-library adapters |
-| Delivery | Supported frozen winners exported as independently callable local HTTP source bundles | Production authentication, tenancy, credential vault and cloud hosting |
+| Delivery | Supported frozen winners exported as local HTTP source bundles; explicit self-attested final review for unlabeled tasks | Production authentication, tenancy, credential vault and cloud hosting |
 | User experience | Minimal Studio; English default, explicit 简体中文 in Settings | Broader accessibility and operating environments |
 
 The architecture keeps candidate families extensible. “Autonomous AI engineering,” “cross-paradigm solution search” and “agentic AutoML” describe the problem space; they do not mean every planned capability is implemented. See the [architecture](docs/PRODUCT_ARCHITECTURE.md), [use cases](docs/USE_CASES.md) and [comparison scope](docs/COMPARISONS.md).
@@ -75,11 +75,17 @@ Prefer a local coding agent? The companion **[sts-skills](https://github.com/run
 
 ## Evidence, including failures
 
-The v0.13.0 suite has **157 Python tests and six Node tests** with the optional schema dependencies installed; base stdlib checks explicitly skip 11 schema-engine tests. Protocol fixtures are separate from real model and runtime acceptance.
+The v0.14.0 suite has **178 Python tests and seven Node tests** with the optional schema dependencies installed; base stdlib checks explicitly skip 11 schema-engine tests. Protocol fixtures are separate from real model and runtime acceptance.
 
 In one small synthetic Chinese task, a tool-use agent selected the intended fee/date tools but returned the wrong final output shape. One measured edit still matched **0/6 validation labels**. The simpler Python candidate matched **6/6**, remained selected and passed **4/4 once-only final labels**, followed by six independent HTTP cases from both its private and exported service bundles. These are provided-label matches, not verified business accuracy or a general ranking of approaches.
 
 A separate model/code workflow passed four final labels and real standalone serving checks with persistent budgets and request IDs. The [case notes](docs/USE_CASES.md#observed-acceptance-cases) explain the scope and missing evidence. This project claims no global optimum, guaranteed self-improvement, or benchmark superiority over related systems. Model-judge scores remain uncalibrated proxies.
+
+For an unlabeled Chinese routing task, the owner reviewed and accepted all four
+once-only final outputs from the selected Rules candidate. Its private service and
+exported ZIP each passed six serving-equivalence HTTP cases. This is self-attested
+acceptance of a small synthetic case, not measured business accuracy. See the
+[v0.14 release evidence](docs/releases/v0.14.0.md).
 
 ## Documentation
 

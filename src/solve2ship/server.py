@@ -15,12 +15,13 @@ from .gateway import BudgetError
 from .delivery import DeliveryError, DeliveryRepository
 from .service_export import export_service
 from .contracts import SandboxUnavailable
+from .reviews import ReviewRepository,ReviewError
 
 
 WEB = Path(__file__).resolve().parents[2] / "web"
 ASSETS = {"/": ("index.html", "text/html"), "/app.mjs": ("app.mjs", "text/javascript"),
           "/i18n.mjs": ("i18n.mjs", "text/javascript"), "/style.css": ("style.css", "text/css"),
-          "/task-ui.mjs": ("task-ui.mjs", "text/javascript"), '/search-ui.mjs': ('search-ui.mjs', 'text/javascript')}
+          "/task-ui.mjs": ("task-ui.mjs", "text/javascript"), '/search-ui.mjs': ('search-ui.mjs', 'text/javascript'), '/reviews-ui.mjs': ('reviews-ui.mjs','text/javascript')}
 JOB_PATH = re.compile(r"/api/jobs/([0-9a-f]{32})(/cancel)?\Z")
 TASK_PATH = re.compile(r"/api/tasks/([0-9a-f]{32})(?:/revisions(?:/([1-9][0-9]{0,8}))?)?\Z")
 SEARCH_PATH = re.compile(r'/api/searches/([0-9a-f]{32})(/cancel)?\Z')
@@ -29,6 +30,9 @@ EVOLVE_PATH = re.compile(r'/api/searches/([0-9a-f]{32})/candidates/([0-9a-f]{32}
 ROLLBACK_PATH = re.compile(r'/api/searches/([0-9a-f]{32})/rollback\Z')
 LINEAGE_PATH = re.compile(r'/api/searches/([0-9a-f]{32})/lineage\Z')
 DELIVERY_PATH = re.compile(r'/api/searches/([0-9a-f]{32})/delivery\Z')
+QUALITY_PATH = re.compile(r'/api/searches/([0-9a-f]{32})/quality-reviews\Z')
+FINAL_REVIEW_PATH = re.compile(r'/api/searches/([0-9a-f]{32})/delivery/reviews\Z')
+QUALITY_DECISION_PATH = re.compile(r'/api/searches/([0-9a-f]{32})/delivery/quality-decision\Z')
 EXPORT_PATH = re.compile(r'/api/searches/([0-9a-f]{32})/delivery/export\Z')
 
 
@@ -45,6 +49,7 @@ def create_server(store, port=8000):
     tasks = TaskRepository(store)
     searches = SearchRepository(store)
     deliveries = DeliveryRepository(store)
+    reviews = ReviewRepository(store)
     class Handler(BaseHTTPRequestHandler):
         def setup(self):
             super().setup()
@@ -95,8 +100,21 @@ def create_server(store, port=8000):
                     isolated = sandbox is not None and sandbox.engine.status()['available']
                 except Exception:
                     isolated = False
-                self.send(200, {"status": "ok", "milestone": "M7-local", "version": __version__,
+                self.send(200, {"status": "ok", "milestone": "M8.2-local", "version": __version__,
                                 "candidate_execution_enabled": True, 'arbitrary_code_execution_enabled': isolated, 'code_runtime_scope': 'experimental_local_docker' if isolated else 'disabled'})
+            elif path == '/api/model-status':
+                from .model_config import load_profile
+                try:
+                    self.send(200,load_profile(store.path.parent/'model.json').status())
+                except (ValueError,OSError):
+                    self.send(200,{'configured':False,'connection_verified':False,'error':'model_profile_unavailable'})
+            elif (match := QUALITY_PATH.fullmatch(path)) or (match := FINAL_REVIEW_PATH.fullmatch(path)):
+                try:
+                    self.send(200,reviews.packet(match[1],final=bool(FINAL_REVIEW_PATH.fullmatch(path))))
+                except KeyError:
+                    self.send(404,{'error':'search_not_found'})
+                except ReviewError as error:
+                    self.send(422,{'error':str(error)})
             elif path == "/api/jobs":
                 self.send(200, {"jobs": store.list(), "limit": 100})
             elif path == "/api/tasks":
@@ -153,7 +171,7 @@ def create_server(store, port=8000):
                 self.send(400, {"error": "One Content-Length required"})
                 return
             path = urlsplit(self.path).path
-            limit = MAX_TASK_BYTES if path.startswith('/api/tasks') else 4096
+            limit = MAX_TASK_BYTES if path.startswith('/api/tasks') else (16384 if path.endswith(('quality-reviews','delivery/reviews','quality-decision')) else 4096)
             try:
                 length = int(lengths[0])
                 if not 0 <= length <= limit:
@@ -166,7 +184,13 @@ def create_server(store, port=8000):
                 self.send(400, {"error": "Invalid JSON object"})
                 return
             try:
-                if match := EXPORT_PATH.fullmatch(path):
+                if match := QUALITY_PATH.fullmatch(path):
+                    self.send(201,reviews.record(match[1],body))
+                elif match := FINAL_REVIEW_PATH.fullmatch(path):
+                    self.send(201,reviews.record(match[1],body,final=True))
+                elif match := QUALITY_DECISION_PATH.fullmatch(path):
+                    self.send(201,reviews.complete(match[1],body))
+                elif match := EXPORT_PATH.fullmatch(path):
                     if body:
                         raise DeliveryError('invalid_delivery_request')
                     delivery = deliveries.for_search(match[1])
@@ -174,9 +198,9 @@ def create_server(store, port=8000):
                         raise DeliveryError('frozen_delivery_required')
                     self.send(201, export_service(store, delivery['id']))
                 elif match := DELIVERY_PATH.fullmatch(path):
-                    if body.keys() != {'request_id'}:
+                    if body.keys() not in ({'request_id'},{'request_id','quality_mode'}):
                         raise DeliveryError('invalid_delivery_request')
-                    self.send(201, deliveries.prepare(match[1], body['request_id']))
+                    self.send(201, deliveries.prepare(match[1], body['request_id'],quality_mode=body.get('quality_mode','provided_labels')))
                 elif match := EVOLVE_PATH.fullmatch(path):
                     if body.keys() != {'request_id'}:
                         raise SearchError('invalid_evolution')
@@ -220,6 +244,10 @@ def create_server(store, port=8000):
                     self.send(200, store.cancel(match[1]))
                 else:
                     self.send(404, {"error": "Not found"})
+            except ReviewError as error:
+                code=str(error);self.send(409 if any(t in code for t in ('conflict','changed','closed')) else 422,{'error':code})
+            except KeyError:
+                self.send(404,{'error':'review_subject_not_available'})
             except ContractError as error:
                 self.send(422, {"error": error.code, "field": error.field})
             except TaskConflict as error:

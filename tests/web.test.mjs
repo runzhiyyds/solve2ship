@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { messages, normalizeLocale, translate,errorText,fieldText } from '../web/i18n.mjs';
+import { reviewMetric } from '../web/reviews-ui.mjs';
 import { funnelStages,familyLabel,inferenceEvidence,invocationSummary,criteriaSummary } from '../web/search-ui.mjs';
 
 test('English default is independent of browser locale; explicit Chinese is supported', () => {
@@ -25,7 +26,7 @@ test('all displayed static text and persisted states have both translations', ()
   assert.deepEqual(Object.keys(messages['en-US']).sort(), Object.keys(messages['zh-CN']).sort());
   const html = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
   const keys = [...html.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]);
-  for(const file of ['app.mjs','task-ui.mjs','search-ui.mjs']) {
+  for(const file of ['app.mjs','task-ui.mjs','search-ui.mjs','reviews-ui.mjs']) {
     const source=readFileSync(new URL('../web/'+file,import.meta.url),'utf8');
     keys.push(...[...source.matchAll(/\bt\('([^']+)'\)/g)].map(m=>m[1]));
   }
@@ -72,4 +73,16 @@ test('structural evidence remains distinct from semantic quality in both languag
   assert.match(criteriaSummary({status:'checked',passed:false},en),/separate from label\/judge quality/);
   assert.match(criteriaSummary({status:'unavailable'},zh),/不可用/);
   assert.match(translate('en-US','criteriaUnreviewed'),/Semantic quality.*unverified/);
+});
+
+
+test('operator final metrics never present self-attestation as label accuracy',()=>{
+ const zh=k=>translate('zh-CN',k),en=k=>translate('en-US',k);
+ assert.match(reviewMetric({quality_mode:'operator_review',review_state:'pending',count:4},zh),/等待你复核/);
+ const report={quality_mode:'operator_review',review_state:'accepted',count:4,accepted_review_count:4,provided_label_matches:null};
+ assert.match(reviewMetric(report,en),/operator: 4\/4.*identity unverified/);
+ assert.match(reviewMetric(report,zh),/操作者接受.*4\/4.*身份未认证/);
+ assert.doesNotMatch(reviewMetric(report,zh),/标签一致/);
+ assert.match(reviewMetric({quality_mode:'provided_labels',count:4,provided_label_matches:3},en),/label matches.*3\/4/);
+ for(const locale of ['en-US','zh-CN'])for(const v of ['accept','reject','unsure'])assert.ok(messages[locale]['review_'+v]);
 });

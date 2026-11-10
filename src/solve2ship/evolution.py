@@ -24,6 +24,9 @@ def mutate_candidate(repository, search_id, source, parent, contract, gateway, r
                'parent_candidate': {key: parent[key] for key in ('family', 'name', 'artifact')},
                'feedback': evidence, 'adapter': registry.describe()[parent['family']]}
     from .criteria import get_bundle
+    from .reviews import ReviewRepository
+    packet = ReviewRepository(repository.store).packet(source['id'])
+    context['operator_feedback_hypothesis'] = [{'execution_id':t['execution_id'],'snapshot_sha256':t['snapshot_sha256'],'review':t['latest_review']['review']} for t in packet['targets'] if t['latest_review'] and t['candidate_id']==parent['id']]
     context['structural_criteria_hypothesis'] = get_bundle(repository, source['id'])
     context['parent_candidate']['artifact']=editable
     if format_repair:
