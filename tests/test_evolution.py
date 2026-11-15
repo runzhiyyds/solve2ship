@@ -86,11 +86,11 @@ class EvolutionTests(unittest.TestCase):
     def test_parent_and_children_share_one_money_budget(self):
         root=self.create(); self.repository.claim()
         self.repository.ledger.configure(root['id'],3*MICRO)
-        self.repository.ledger.reserve(root['id'],'uncertain','deepseek-flash',128)
+        self.repository.ledger.reserve(root['id'],'uncertain','deepseek-flash',128,allow_fixture=True)
         child=self.repository.create(self.task['task_id'],1,uuid.uuid4().hex,source_search_id=root['id'])
         self.repository.claim()
         with self.assertRaises(BudgetError):
-            self.repository.ledger.reserve(child['id'],'second','deepseek-flash',128)
+            self.repository.ledger.reserve(child['id'],'second','deepseek-flash',128,allow_fixture=True)
         self.assertLessEqual(self.repository.ledger.status(root['id'])['root_committed_ceiling_cny'],3)
 
     def test_execution_slots_are_atomic_across_competing_workers(self):

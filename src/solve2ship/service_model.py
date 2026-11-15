@@ -14,6 +14,7 @@ from .gateway import Ledger,ModelGateway,BudgetError,MICRO,ProviderError
 from .model_config import load_profile,save_profile
 from .store import Store
 from .invocation import CallTraceGateway,invocation_runtime
+from .pricing import PricingCatalog, PricingError
 
 
 class RequestConflict(ValueError):pass
@@ -78,9 +79,22 @@ class ServiceState:
 
 def main():
     parser=argparse.ArgumentParser(description='Standalone service setup; English / 简体中文')
-    parser.add_argument('command',choices=['configure-model','authorize-budget','status'])
+    parser.add_argument('command',choices=['configure-model','authorize-budget','status','pricing-status','pricing-preview','review-pricing'])
     parser.add_argument('--state-dir',type=Path,default=Path('.sts'))
-    parser.add_argument('--cny');parser.add_argument('--grant-file',type=Path);args=parser.parse_args()
+    parser.add_argument('--cny');parser.add_argument('--grant-file',type=Path)
+    parser.add_argument('--pricing-file',type=Path);parser.add_argument('--reviewed-sha256');args=parser.parse_args()
+    if args.command in ('pricing-status','pricing-preview','review-pricing'):
+        if args.command == 'pricing-status':
+            value = PricingCatalog(args.state_dir/'pricing').status()
+        else:
+            if not args.pricing_file: parser.error('--pricing-file is required / 需要价格文件')
+            catalog = PricingCatalog(args.state_dir/'pricing')
+            if args.command == 'pricing-preview':
+                value = catalog.preview(args.pricing_file)
+            else:
+                if not args.reviewed_sha256: parser.error('--reviewed-sha256 is required / 需要审核哈希')
+                value = catalog.import_reviewed(args.pricing_file, args.reviewed_sha256)
+        print(json.dumps(value, ensure_ascii=False)); return
     root=Path(__file__).resolve().parents[1];candidate=json.loads((root/'candidate.json').read_text());state=ServiceState(args.state_dir,candidate)
     if args.command=='configure-model':
         if not sys.stdin.isatty() or not sys.stderr.isatty():parser.error('Use a hidden interactive prompt / 请在交互式终端隐藏输入密钥')
@@ -98,5 +112,5 @@ def main():
 
 if __name__=='__main__':
     try:main()
-    except (ValueError,InvalidOperation,BudgetError,OSError):
+    except (ValueError,InvalidOperation,BudgetError,PricingError,OSError):
         raise SystemExit('Service configuration failed; check profile, allowance and persistent state / 服务配置失败，请检查连接、额度和持久化状态。') from None

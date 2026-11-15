@@ -10,9 +10,10 @@ Language explicitly selects 简体中文; the default is English.
 Configure a model with python3 -m solve2ship configure-model under PYTHONPATH=src.
 Use the hidden prompt; no key in arguments or browser. authorize-budget --cny
 sets a cumulative authorized ceiling, never a usage reset. The current reviewed
-endpoint is https://api.deepseek.com and model deepseek-flash. Date-limited pricing
-fails closed after its review date until the policy is reviewed. Provider invoices
-are authoritative; token estimates do not monetize local compute/hosting.
+endpoint is https://api.deepseek.com and model deepseek-flash. New paid work needs
+an explicitly imported owner-reviewed price version with a bounded UTC validity
+window; missing or expired pricing fails closed. Provider invoices are authoritative;
+token estimates do not monetize local compute/hosting.
 
 Results show actual outputs, common-case comparisons, bounded edit history, per-step
 calls/costs and errors. Label agreement is conditional on unverified labels; judges
@@ -106,9 +107,11 @@ python3 -m runtime.service_model status --state-dir /absolute/private/service-st
 python3 -m runtime.service_runtime --state-dir /absolute/private/service-state
 ```
 
-The model setup uses a hidden key prompt. Use the reviewed endpoint/model and a
-date-valid pricing policy. Keep this owner-only state outside the source bundle and
-version control; it contains a plaintext profile, usage.sqlite3 and cached responses.
+The model setup uses a hidden key prompt. Use the reviewed endpoint/model and an
+explicitly imported price version. Reviewers can use `pricing-preview`,
+`review-pricing` and `pricing-status` as described in MODEL_CONFIGURATION.md. Keep
+this owner-only state outside the source bundle and version control; it contains a
+plaintext profile, usage.sqlite3, the local pricing catalog and cached responses.
 Never delete/recreate it to reset authorization. The STS controller and experiment DB
 are unnecessary. This local service has no public authentication; bind to loopback.
 

@@ -8,10 +8,11 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener,ProxyHandl
 from urllib.parse import urlsplit
 
 from .contracts import sha256, strict_json_loads, validate_json
+from .pricing import PricingCatalog, PricingError
 
 
-# Verified against DeepSeek official pricing on 2026-11-09. Micro-CNY per token,
-# peak cache-miss input/output. Actual provider billing can be lower; this is a ceiling estimate.
+# Legacy protocol-fixture rates only. Production reservations use PricingCatalog;
+# these constants remain for historical schema backfills and isolated test transport.
 INPUT_RATE = 2
 OUTPUT_RATE = 8
 CONTEXT_CEILING = 1048576
@@ -53,6 +54,34 @@ def effective_report(db, delivery_id, report):
 class Ledger:
     def __init__(self, store):
         self.store = store
+
+    def pricing_status(self, base_url=None, model=None):
+        return PricingCatalog(self.store.path.parent / 'pricing').status(base_url, model)
+
+    def price(self, model, base_url='https://api.deepseek.com', *, expected_version_id=None, allow_fixture=False):
+        """Resolve the owner-reviewed snapshot for one new reservation.
+
+        Fixtures use the already isolated loopback provider and retain an explicit
+        legacy fixture path. Production calls require an imported active review;
+        a missing or expired review fails closed and never performs network I/O.
+        """
+        catalog = PricingCatalog(self.store.path.parent / 'pricing')
+        try:
+            snapshot = catalog.resolve('https://api.deepseek.com' if allow_fixture else base_url, model)
+            if expected_version_id and snapshot['version_id'] != expected_version_id:
+                raise PricingError('pricing_version_changed')
+            return snapshot
+        except PricingError as error:
+            # Protocol fixtures run only against an explicitly loopback transport.
+            # This compatibility path is never available on the production endpoint.
+            if (allow_fixture and not catalog.directory.exists() and
+                    expected_version_id in (None, 'fixture-legacy-2026-11-09') and model == 'deepseek-flash'):
+                snapshot = {**pricing_snapshot(), 'max_output_tokens': 8192,
+                            'version_id': 'fixture-legacy-2026-11-09'}
+                if expected_version_id and expected_version_id != snapshot['version_id']:
+                    raise BudgetError('pricing_version_changed')
+                return snapshot
+            raise BudgetError(str(error)) from None
 
     def configure(self, account, limit_micro):
         if type(limit_micro) is not int or limit_micro < 0:
@@ -112,13 +141,13 @@ class Ledger:
             db.execute('INSERT INTO service_budget_grants VALUES(:id,:delivery_id,:root_id,:created_at,:amount_micro)',grant)
             return grant
 
-    def reserve(self, scope, purpose, model, max_tokens):
-        # Billing is enabled only for the model with a verified price snapshot.
-        if model != 'deepseek-flash' or time.strftime('%Y-%m-%d', time.gmtime()) != PRICING_VERIFIED_DATE:
-            raise BudgetError('price_snapshot_requires_review')
-        if type(max_tokens) is not int or not 1 <= max_tokens <= 8192:
+    def reserve(self, scope, purpose, model, max_tokens, *, base_url='https://api.deepseek.com',
+                expected_version_id=None, allow_fixture=False):
+        snapshot = self.price(model, base_url, expected_version_id=expected_version_id,
+                              allow_fixture=allow_fixture)
+        if type(max_tokens) is not int or not 1 <= max_tokens <= min(8192, snapshot['max_output_tokens']):
             raise BudgetError('invalid_token_limit')
-        amount = CONTEXT_CEILING * INPUT_RATE + max_tokens * OUTPUT_RATE
+        amount = snapshot['context_ceiling'] * snapshot['input_micro_per_token'] + max_tokens * snapshot['output_micro_per_token']
         call_id = uuid.uuid4().hex
         with self.store.connection(write=True) as db:
             if scope.startswith('delivery:'):
@@ -136,7 +165,8 @@ class Ledger:
             if limit is None or self.tree_committed(db, root) + amount > limit[0]:
                 raise BudgetError('root_search_budget_exhausted')
             db.execute("INSERT INTO model_calls(id,scope,purpose,model,created_at,reserved_micro,state,pricing_json) VALUES(?,?,?,?,?,?,'reserved',?)",
-                       (call_id, scope, purpose, model, time.time(), amount, json.dumps({**pricing_snapshot(), 'max_output_tokens': max_tokens})))
+                       (call_id, scope, purpose, model, time.time(), amount,
+                        json.dumps({**snapshot, 'max_output_tokens': max_tokens})))
         return call_id
 
     def settle(self, call_id, response):
@@ -177,6 +207,7 @@ class Ledger:
 
     def status(self, scope=None):
         account = 'work' if scope is None else scope
+        pricing = self.pricing_status()
         with self.store.connection() as db:
             db.execute('BEGIN')
             row = db.execute('SELECT limit_micro FROM budget_accounts WHERE id=?', (account,)).fetchone()
@@ -195,8 +226,10 @@ class Ledger:
                     'committed_ceiling_cny': self._committed(db, scope) / MICRO,
                     'root_search_id': root, 'root_limit_cny': root_limit[0]/MICRO if root_limit else None,
                     'root_committed_ceiling_cny': self.tree_committed(db, root)/MICRO if root else None,
-                    'pricing_source': PRICING_SOURCE,
-                    'pricing_verified_date': PRICING_VERIFIED_DATE, 'provider_bill_verified': False, 'calls': calls,
+                    'pricing': pricing,
+                    'pricing_source': (pricing.get('snapshot') or {}).get('source') or PRICING_SOURCE,
+                    'pricing_verified_date': (pricing.get('snapshot') or {}).get('verified_date') or PRICING_VERIFIED_DATE,
+                    'provider_bill_verified': False, 'calls': calls,
                     'service_allowances':grants,'delegated_ceiling_cny':sum(r['amount_micro'] for r in grants)/MICRO}
 
 
@@ -211,9 +244,18 @@ class ModelGateway:
         if not allow_fixture and (endpoint.scheme != 'https' or endpoint.hostname != 'api.deepseek.com' or endpoint.path not in ('', '/v1') or endpoint.port not in (None, 443)):
             raise BudgetError('unpriced_endpoint_requires_review')
         self.profile, self.ledger, self.scope = profile, ledger, scope
+        self.expected_pricing_version_id = None
         self.fixture_transport=allow_fixture
         if allow_fixture and (endpoint.scheme!='http' or endpoint.hostname not in ('127.0.0.1','localhost')):
             raise BudgetError('loopback_fixture_required')
+
+    def pricing(self):
+        snapshot = self.ledger.price(self.profile.model, self.profile.base_url,
+                                     expected_version_id=self.expected_pricing_version_id,
+                                     allow_fixture=self.fixture_transport)
+        if self.expected_pricing_version_id is None:
+            self.expected_pricing_version_id = snapshot['version_id']
+        return snapshot
 
     def redact(self, value):
         if type(value) is str:
@@ -231,7 +273,13 @@ class ModelGateway:
         body = json.dumps(payload, ensure_ascii=False).encode()
         if len(body) > 262144:
             raise ProviderError('model_input_too_large')
-        call_id = self.ledger.reserve(self.scope, purpose, self.profile.model, max_tokens)
+        # Bind this gateway to the first reviewed version it observes. A later
+        # review may affect future gateways, never an in-flight search/service.
+        self.pricing()
+        call_id = self.ledger.reserve(self.scope, purpose, self.profile.model, max_tokens,
+                                      base_url=self.profile.base_url,
+                                      expected_version_id=self.expected_pricing_version_id,
+                                      allow_fixture=self.fixture_transport)
         request = Request(self.profile.base_url + '/chat/completions', data=body,
                           headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.profile.api_key})
         try:

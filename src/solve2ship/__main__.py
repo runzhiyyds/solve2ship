@@ -13,16 +13,37 @@ from .worker import Worker
 from .model_config import ProfileError, load_profile, save_profile
 from .search import SearchWorker
 from .gateway import BudgetError, Ledger, MICRO
+from .pricing import PricingCatalog, PricingError
 
 
 def main():
     parser = argparse.ArgumentParser(description="Solve2Ship local development server and model profile tools")
-    parser.add_argument('command', nargs='?', choices=['serve', 'configure-model', 'model-status', 'authorize-budget'], default='serve')
+    parser.add_argument('command', nargs='?', choices=['serve', 'configure-model', 'model-status', 'authorize-budget',
+                                                        'pricing-status', 'pricing-preview', 'review-pricing'], default='serve')
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--db", type=Path, default=Path(".sts/state.sqlite3"))
     parser.add_argument('--cny', help='Explicit cumulative model-call budget; never resets existing usage')
+    parser.add_argument('--pricing-file', type=Path)
+    parser.add_argument('--reviewed-sha256', help='Canonical price document hash personally reviewed against its source')
     args = parser.parse_args()
-    profile_path = Path('.sts/model.json')
+    profile_path = args.db.parent / 'model.json'
+    if args.command in ('pricing-status', 'pricing-preview', 'review-pricing'):
+        catalog = PricingCatalog(args.db.parent / 'pricing')
+        try:
+            if args.command == 'pricing-status':
+                value = catalog.status()
+            elif not args.pricing_file:
+                parser.error('--pricing-file is required / 需要价格文件')
+            elif args.command == 'pricing-preview':
+                value = catalog.preview(args.pricing_file)
+            else:
+                if not args.reviewed_sha256:
+                    parser.error('--reviewed-sha256 is required / 需要审核哈希')
+                value = catalog.import_reviewed(args.pricing_file, args.reviewed_sha256)
+            print(json.dumps(value, ensure_ascii=False))
+        except (PricingError, OSError) as error:
+            parser.exit(1, 'Pricing review failed / 价格审核失败: ' + str(error) + '\n')
+        return
     if args.command == 'authorize-budget':
         try:
             amount = Decimal(args.cny or '')
@@ -46,7 +67,7 @@ def main():
                 })
             else:
                 profile = load_profile(profile_path)
-            print(json.dumps(profile.status()))
+            print(json.dumps({**profile.status(), 'pricing': PricingCatalog(args.db.parent / 'pricing').status(profile.base_url, profile.model)}, ensure_ascii=False))
         except FileNotFoundError:
             print(json.dumps({'configured': False, 'connection_verified': False}))
         except (ProfileError, OSError):

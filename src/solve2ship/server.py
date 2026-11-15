@@ -105,7 +105,9 @@ def create_server(store, port=8000):
             elif path == '/api/model-status':
                 from .model_config import load_profile
                 try:
-                    self.send(200,load_profile(store.path.parent/'model.json').status())
+                    profile = load_profile(store.path.parent/'model.json')
+                    self.send(200, {**profile.status(),
+                                    'pricing': searches.ledger.pricing_status(profile.base_url, profile.model)})
                 except (ValueError,OSError):
                     self.send(200,{'configured':False,'connection_verified':False,'error':'model_profile_unavailable'})
             elif (match := QUALITY_PATH.fullmatch(path)) or (match := FINAL_REVIEW_PATH.fullmatch(path)):

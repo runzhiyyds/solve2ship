@@ -48,7 +48,16 @@ def export_service(store, delivery_id):
     original = Path(delivery['draft_path'])
     family=delivery['frozen']['candidate']['family']
     needs_model=model_required(family,delivery['frozen']['candidate']['artifact'])
-    required_version = 4 if delivery['report'].get('quality_mode')=='operator_review' else (3 if needs_model else 2)
+    runtime_version = delivery['frozen'].get('runtime_version', 1)
+    if needs_model and runtime_version < 2:
+        # Historical exports remain readable and immutable. A new export from an
+        # old model template is refused rather than silently changing its bytes.
+        with store.connection() as db:
+            existing = db.execute('SELECT receipt_json FROM service_export_versions WHERE delivery_id=? ORDER BY created_at DESC LIMIT 1', (delivery_id,)).fetchone()
+        if existing:
+            return exported_service(store, delivery_id)
+        raise DeliveryError('legacy_runtime_template_unavailable')
+    required_version = 5 if runtime_version >= 2 else (4 if delivery['report'].get('quality_mode')=='operator_review' else (3 if needs_model else 2))
     needs_docker=family in ('python.v1','workflow.v1','sklearn.classifier.v1','agent.tools.v1')
     if hashlib.sha256((original/'manifest.json').read_bytes()).hexdigest() != delivery['proof']['manifest_sha256']:
         raise DeliveryError('frozen_serving_proof_mismatch')
@@ -65,7 +74,7 @@ def export_service(store, delivery_id):
             root.mkdir(mode=0o700)
             with tempfile.TemporaryDirectory(dir=root, prefix='stage-') as temporary:
                 package = Path(temporary)/'service';package.mkdir(mode=0o700)
-                for name in sorted(bundle_files(family)-{'Dockerfile','README.md','provenance.json'}):
+                for name in sorted(bundle_files(family, runtime_version)-{'Dockerfile','README.md','provenance.json'}):
                     target = package/name;target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes((original/name).read_bytes())
                 for name in ('LICENSE','NOTICE'):
@@ -153,7 +162,17 @@ it must not be assumed to create extra budget for an existing grant.
     python3 -B -E -S -m runtime.service_runtime --port 9000 --state-dir ../service-state
     python3 -B -E -S -m runtime.service_model status --state-dir ../service-state
 
-The current reviewed model is DeepSeek Flash; pricing expires by UTC review date.
+Before new model calls, review an owner-only price document against the official
+source, inspect its canonical hash and explicitly activate it in the same state
+directory:
+
+    python3 -B -E -S -m runtime.service_model pricing-preview --pricing-file ../reviewed-price.json --state-dir ../service-state
+    python3 -B -E -S -m runtime.service_model review-pricing --pricing-file ../reviewed-price.json --reviewed-sha256 REVIEWED_HASH --state-dir ../service-state
+    python3 -B -E -S -m runtime.service_model pricing-status --state-dir ../service-state
+
+The current reviewed model is DeepSeek Flash; each new call requires an active
+owner-reviewed price snapshot bound to this endpoint and model. The source hash is
+an operator audit assertion, not an automatic quotation or provider invoice.
 Each call reserves conservative headroom before submission. Unknown charges remain
 reserved across restart. A delegated allowance cannot be raised by reconfiguration.
 Unused delegated headroom stays reserved in the original project budget; it is not
@@ -176,6 +195,9 @@ local developer service on loopback; no production tenancy/cloud hosting is clai
 约束，未用额度仍保留。保留独立用量数据库才能在重启后保持计费与请求防重放。
 相同编号的成功请求只返回缓存；失败/中断或输入冲突返回 409，不自动重跑。状态为
 仅所有者可读的本机明文，尚非生产保险库。代码步骤仍只在受限 Docker 内执行。
+新模型调用前必须按官方来源人工核验价格文件，先预览规范哈希，再明确启用；最长七天
+是本地审核窗口，不是服务商锁价。到期会拒绝新调用，不自动续期；旧调用、未知费用
+和委托额度保留。价格文件、活动指针和密钥不会进入源码包。
 ''')
                 inventory = ROOT/'.sts/runtime-acceptance/docker-runtime-inventory.json'
                 metadata = {'repository_license': 'Apache-2.0', 'copyright_holder': policy['copyright_holder'],
@@ -208,7 +230,7 @@ local developer service on loopback; no production tenancy/cloud hosting is clai
                         if (secret and secret in text) or any(pattern.search(text) for pattern in patterns):
                             raise DeliveryError('possible_secret_in_bundle_review_required')
                 hashes = {str(path.relative_to(package)):hashlib.sha256(path.read_bytes()).hexdigest() for path in package.rglob('*') if path.is_file()}
-                (package/'manifest.json').write_text(canonical_json({'schema_version':1,'export_id':identifier,
+                (package/'manifest.json').write_text(canonical_json({'schema_version':1,'runtime_version':runtime_version,'export_id':identifier,
                     'delivery_id':delivery_id,'license':'Apache-2.0','files_sha256':hashes})+'\n')
                 archive = root/'service.zip'
                 with zipfile.ZipFile(archive,'x',zipfile.ZIP_DEFLATED) as bundle:

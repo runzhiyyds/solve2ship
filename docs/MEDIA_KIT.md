@@ -100,3 +100,17 @@ it is certified truth. [Evidence and limitations](releases/v0.15.0.md).
 路由案例中，所有者接受四条真实最终输出；未改动的规则产物继续通过本机独立 HTTP
 及源码 ZIP/容器检查。没有新增模型调用、不宣称准确率、不用最终数据调优。研究问题
 是：如何让业务判断参与交付，又不把它冒充已认证的真值？
+
+## v0.16 pricing story / 可审计价格案例
+
+**Draft, not posted.** Model services should not become payable because a date in
+application code happens to match. In v0.16, an owner reviews a bounded official
+price document, inspects its canonical hash and explicitly activates a short UTC
+window. New calls retain the exact version they reserved; an expired review blocks
+new spending until another review. The source hash is an audit assertion, not a
+provider invoice or an automatic ranking claim.
+
+**传播草稿，尚未发布。** 模型服务不应因为代码里的日期碰巧相同就自动产生费用。v0.16
+要求所有者审核受限的官方价格文件，查看规范哈希并明确启用短期 UTC 窗口。新调用保留
+预留时的精确版本；审核到期后暂停新支出，直到再次审核。来源哈希是审计声明，不是服务商
+账单，也不代表搜索排名或传播效果。

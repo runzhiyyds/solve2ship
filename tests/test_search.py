@@ -98,7 +98,7 @@ class BillingTests(unittest.TestCase):
         self.ledger.configure('work', 3 * MICRO)
         def reserve(_):
             try:
-                return self.ledger.reserve('scope', 'test', 'deepseek-flash', 128)
+                return self.ledger.reserve('scope', 'test', 'deepseek-flash', 128, allow_fixture=True)
             except BudgetError:
                 return None
         with ThreadPoolExecutor(max_workers=8) as executor:
@@ -107,7 +107,7 @@ class BillingTests(unittest.TestCase):
         self.assertLessEqual(self.ledger.status()['committed_ceiling_cny'], 3)
 
     def test_unsettled_cost_survives_restart_and_zero_budget_denies(self):
-        call = self.ledger.reserve('scope', 'test', 'deepseek-flash', 128)
+        call = self.ledger.reserve('scope', 'test', 'deepseek-flash', 128, allow_fixture=True)
         self.ledger.uncertain(call, 'connection_lost')
         restarted = Ledger(Store(self.path))
         self.assertGreater(restarted.status()['committed_ceiling_cny'], 2)
@@ -116,7 +116,7 @@ class BillingTests(unittest.TestCase):
             restarted.configure('work', 0)
 
     def test_settlement_is_once_only_and_usage_is_measured(self):
-        call = self.ledger.reserve('scope', 'test', 'deepseek-flash', 128)
+        call = self.ledger.reserve('scope', 'test', 'deepseek-flash', 128, allow_fixture=True)
         response = {'usage': {'prompt_tokens': 100, 'completion_tokens': 10}, 'id': 'fixture-id'}
         self.ledger.settle(call, response); self.ledger.settle(call, response)
         self.assertAlmostEqual(self.ledger.status()['committed_ceiling_cny'], 0.00028)
@@ -135,7 +135,7 @@ class BillingTests(unittest.TestCase):
             ModelGateway(provider.profile, self.ledger, 'scope')
 
     def test_settlement_keeps_original_call_rates_after_a_later_price_review(self):
-        call = self.ledger.reserve('scope', 'test', 'deepseek-flash', 128)
+        call = self.ledger.reserve('scope', 'test', 'deepseek-flash', 128, allow_fixture=True)
         snapshot = self.ledger.status()['calls'][0]['pricing']
         with patch('solve2ship.gateway.INPUT_RATE', 99), patch('solve2ship.gateway.OUTPUT_RATE', 99):
             self.ledger.settle(call, {'usage': {'prompt_tokens': 100, 'completion_tokens': 10}})
@@ -147,7 +147,7 @@ class BillingTests(unittest.TestCase):
                 db.execute("UPDATE model_calls SET pricing_json='{}' WHERE id=?", (call,))
 
     def test_schema8_legacy_price_backfill_does_not_reset_usage_or_unknown_reservations(self):
-        call = self.ledger.reserve('scope', 'test', 'deepseek-flash', 128)
+        call = self.ledger.reserve('scope', 'test', 'deepseek-flash', 128, allow_fixture=True)
         before = self.ledger.status()['committed_ceiling_cny']
         with self.store.connection(write=True) as db:
             db.execute('DROP TRIGGER pricing_no_update')

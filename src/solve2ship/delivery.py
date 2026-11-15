@@ -11,7 +11,7 @@ import uuid
 from .candidates import RulesAdapter, PythonAdapter,PromptAdapter,HybridAdapter,ArtifactError,model_required
 from .contracts import canonical_json, sha256
 from .evaluation import partition_indices
-from .gateway import BudgetError,ModelGateway,ProviderError,PRICING_VERIFIED_DATE,CONTEXT_CEILING,INPUT_RATE,OUTPUT_RATE
+from .gateway import BudgetError,ModelGateway,ProviderError
 from .invocation import CallTraceGateway,invocation_runtime
 from .reviews import effective_report
 from .search import SearchRepository
@@ -25,12 +25,16 @@ BUNDLE_FILES = {'candidate.json', 'contract.json', 'requirements.txt', 'README.m
                 'runtime/__init__.py', 'runtime/contracts.py', 'runtime/candidates.py', 'runtime/service_runtime.py'}
 
 
-def bundle_files(family):
+def bundle_files(family, runtime_version=2):
+    if runtime_version not in (1, 2):
+        raise DeliveryError('unsupported_runtime_template_version')
     extra={'runtime/docker_runtime.py','runtimes/python/runner.py','dependencies.json'} if family in ('python.v1','sklearn.classifier.v1','workflow.v1','agent.tools.v1') else set()
     if family=='agent.tools.v1':extra|={'runtime/tool_agent.py','runtime/workflow_adapter.py'}
     if family=='workflow.v1':extra|={'runtime/workflow_adapter.py','runtime/invocation.py','runtime/gateway.py'}
     if family in ('workflow.v1','prompt.v1','hybrid.v1','agent.tools.v1'):
         extra|={'runtime/service_model.py','runtime/gateway.py','runtime/model_config.py','runtime/store.py','runtime/invocation.py'}
+        if runtime_version >= 2:
+            extra.add('runtime/pricing.py')
     if family=='sklearn.classifier.v1':
         extra|={'runtime/sklearn_adapter.py','runtimes/sklearn/train.py','runtimes/sklearn/predict.py','runtimes/sklearn/requirements.lock','runtimes/sklearn/Dockerfile'}
     return BUNDLE_FILES|extra
@@ -57,8 +61,11 @@ class DeliveryRepository:
         intact = False
         try:
             manifest = json.loads((root / 'manifest.json').read_text())
+            runtime_version = value['frozen'].get('runtime_version', 1)
             intact = (type(manifest) is dict and type(manifest.get('files_sha256')) is dict
-                      and manifest['delivery_id'] == delivery_id and set(manifest['files_sha256']) == bundle_files(value['frozen']['candidate']['family'])
+                      and manifest['delivery_id'] == delivery_id
+                      and manifest.get('runtime_version', 1) == runtime_version
+                      and set(manifest['files_sha256']) == bundle_files(value['frozen']['candidate']['family'], runtime_version)
                       and all(not (root / name).is_symlink() and hashlib.sha256((root / name).read_bytes()).hexdigest() == digest
                               for name, digest in manifest['files_sha256'].items()))
         except (OSError, ValueError, KeyError, TypeError):
@@ -111,18 +118,18 @@ class DeliveryRepository:
         adapter = RulesAdapter()
         if candidate['family']=='prompt.v1':adapter=PromptAdapter()
         if candidate['family']=='hybrid.v1':adapter=HybridAdapter()
-        needs_model=model_required(candidate['family'],candidate['artifact']);profile=None
+        needs_model=model_required(candidate['family'],candidate['artifact']);profile=None;price=None
         if needs_model:
             from .model_config import load_profile
             try:
                 profile=load_profile(self.store.path.parent/'model.json')
                 if profile.model!='deepseek-flash':raise ValueError('unpriced_model')
-                ModelGateway(profile,self.searches.ledger,'preflight')
+                preflight=ModelGateway(profile,self.searches.ledger,'preflight')
             except (OSError,ValueError,BudgetError) as error:raise DeliveryError('model_profile_required') from error
-            if time.strftime('%Y-%m-%d',time.gmtime())!=PRICING_VERIFIED_DATE:raise BudgetError('price_snapshot_requires_review')
+            price=preflight.pricing()
             with self.store.connection() as db:
                 root=self.searches.ledger.root_scope(db,search_id)
-                peak=CONTEXT_CEILING*INPUT_RATE+1024*OUTPUT_RATE
+                peak=price['context_ceiling']*price['input_micro_per_token']+1024*price['output_micro_per_token']
                 for account,used in [('work',self.searches.ledger._committed(db,None)),(root,self.searches.ledger.tree_committed(db,root))]:
                     limit=db.execute('SELECT limit_micro FROM budget_accounts WHERE id=?',(account,)).fetchone()
                     if limit is None or limit[0]-used<peak:raise BudgetError('final_model_budget_insufficient')
@@ -186,7 +193,8 @@ class DeliveryRepository:
                 maximum = db.execute('SELECT execution_limit FROM searches WHERE id=?', (root,)).fetchone()[0]
                 if used + len(unique) > maximum:
                     raise BudgetError('final_execution_budget_insufficient')
-                frozen = {'candidate': candidate, 'task_content_sha256': task['content_sha256'],
+                frozen = {'candidate': candidate, 'runtime_version': 2 if needs_model else 1,
+                          'pricing_preflight': price, 'task_content_sha256': task['content_sha256'],
                           'dataset_sha256': contract['dataset']['sha256'], 'final_indices': list(unique.values()),
                           'selection_evidence': selection['evidence'], 'frozen_before_final_execution': True,
                           'output_specification': contract['definition']['output_specification'],
@@ -208,6 +216,8 @@ class DeliveryRepository:
             return self.get(delivery_id)  # No replay after interrupted exposure.
         observations = []
         gateway=ModelGateway(profile,self.searches.ledger,'delivery:'+delivery_id) if needs_model else None
+        if gateway and price:
+            gateway.expected_pricing_version_id = price['version_id']
         for index in unique.values():
             started = time.perf_counter()
             output,error,agreement=None,None,None
@@ -252,7 +262,10 @@ class DeliveryRepository:
         for name in ['contracts.py', 'candidates.py', 'service_runtime.py']:
             (package / name).write_bytes((sources / name).read_bytes())
         if candidate['family'] in ('workflow.v1','prompt.v1','hybrid.v1','agent.tools.v1'):
-            for name in ('service_model.py','gateway.py','model_config.py','store.py','invocation.py'):
+            model_sources = ('service_model.py','gateway.py','model_config.py','store.py','invocation.py')
+            if frozen.get('runtime_version', 1) >= 2:
+                model_sources += ('pricing.py',)
+            for name in model_sources:
                 (package/name).write_bytes((sources/name).read_bytes())
         if candidate['family'] in ('python.v1','sklearn.classifier.v1','workflow.v1','agent.tools.v1'):
             (package/'docker_runtime.py').write_bytes((sources/'docker_runtime.py').read_bytes())
@@ -330,7 +343,8 @@ CMD ["python3", "-m", "runtime.service_runtime", "--port", "9000", "--host", "0.
             'application_packages': [], 'runtime': {'name': 'CPython', 'tested_version': '3.13.3', 'license': 'PSF-2.0', 'bundled': False},
             'container_base': {'status': 'not_selected_or_built', 'incorporated_notices_review': 'pending'}})+'\n')
         hashes = {str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest() for path in root.rglob('*') if path.is_file()}
-        (root / 'manifest.json').write_text(canonical_json({'schema_version': 1, 'delivery_id': delivery_id,
+        (root / 'manifest.json').write_text(canonical_json({'schema_version': 1,
+              'runtime_version': frozen.get('runtime_version', 1), 'delivery_id': delivery_id,
               'private_draft': True, 'release_allowed': False, 'files_sha256': hashes})+'\n')
         for path in root.rglob('*'):
             if path.is_file():

@@ -10,7 +10,7 @@
 
 A task may need rules, a short Python program, a trained model, a prompt or a tool-using workflow. STS treats these as competing approaches. It selects using the available quality evidence, measured inference cost and latency; an agent does not receive a preference for being an agent.
 
-**v0.15.0 engineering preview · [Apache-2.0](LICENSE).** The current implementation runs locally and supports a bounded set of candidate families. The complete autonomous engineering platform remains a development goal.
+**v0.16.0 engineering preview · [Apache-2.0](LICENSE).** The current implementation runs locally and supports a bounded set of candidate families. The complete autonomous engineering platform remains a development goal.
 
 ## How Goal-to-Service works
 
@@ -61,7 +61,7 @@ PYTHONPATH=src python3 -m solve2ship authorize-budget --cny YOUR_APPROVED_LIMIT
 PYTHONPATH=src python3 -m solve2ship model-status
 ```
 
-Replace `YOUR_APPROVED_LIMIT` with your own cumulative authorization. Enter the key only in the hidden terminal prompt. Usage and unknown-charge reservations persist across restarts. The owner-only profile is local plaintext, not a production vault. The current paid gateway requires the reviewed DeepSeek Flash endpoint/model and a date-valid pricing policy; other providers need review before paid use.
+Replace `YOUR_APPROVED_LIMIT` with your own cumulative authorization. Enter the key only in the hidden terminal prompt. Usage and unknown-charge reservations persist across restarts. The owner-only profile is local plaintext, not a production vault. The current paid gateway requires the reviewed DeepSeek Flash endpoint/model and an explicitly imported, time-bounded price review; other providers need review before paid use. Run `pricing-preview`, `review-pricing` and `pricing-status` as described in [the model configuration guide](docs/MODEL_CONFIGURATION.md). STS never renews prices or submits paid work without an active review.
 
 Rules/Prompt/Hybrid do not require Docker. Python, numeric ML, workflows and tool-use agents require machine-specific runtime acceptance. The [usage guide](docs/USAGE.md) covers setup, supported delivery and independent service configuration.
 
@@ -85,7 +85,7 @@ Prefer a local coding agent? The companion **[sts-skills](https://github.com/run
 
 ## Evidence, including failures
 
-The current suite has **183 Python tests and seven Node tests**; base stdlib checks explicitly skip 11 optional schema-engine tests. Protocol fixtures are separate from real model and runtime acceptance.
+The current suite has **200 Python tests and seven Node tests**; base stdlib checks explicitly skip 11 optional schema-engine tests. Protocol fixtures are separate from real model and runtime acceptance.
 
 In one small synthetic Chinese task, a tool-use agent selected the intended fee/date tools but returned the wrong final output shape. One measured edit still matched **0/6 validation labels**. The simpler Python candidate matched **6/6**, remained selected and passed **4/4 once-only final labels**, followed by six independent HTTP cases from both its private and exported service bundles. These are provided-label matches, not verified business accuracy or a general ranking of approaches.
 
@@ -95,7 +95,7 @@ For an unlabeled Chinese routing task, the owner reviewed and accepted all four
 once-only final outputs from the selected Rules candidate. Its private service and
 exported ZIP each passed six serving-equivalence HTTP cases. This is self-attested
 acceptance of a small synthetic case, not measured business accuracy. See the
-[v0.15 release evidence](docs/releases/v0.15.0.md).
+[v0.16 release evidence](docs/releases/v0.16.0.md).
 
 ## Documentation
 

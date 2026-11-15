@@ -2,7 +2,48 @@
 
 ## Unreleased / 未发布
 
+### English
+
+- M8.4 adds an owner-reviewed, hash-addressed pricing lifecycle for new model
+  calls. Explicit preview/import/status commands, UTC validity windows, endpoint and
+  model binding, per-call immutable snapshots and gateway version fencing replace
+  the former daily date gate.
+- New model-backed delivery/runtime template v2 carries the pricing adapter while
+  keeping price files, credentials and local state outside source exports. Missing or
+  expired reviews fail closed; no automatic renewal or invoice verification is claimed.
+- 200 Python tests and seven Node tests pass locally; no paid model call was needed
+  for this slice.
+
+### 简体中文
+
+- M8.4 为新的模型调用加入所有者明确审核、哈希寻址的价格生命周期：预览/导入/状态
+  命令、UTC 有效期、端点与模型绑定、每次调用不可变价格快照和网关版本防切换，替代原有
+  的每日日期门禁。
+- 新的模型交付/运行时模板 v2 携带价格适配器，但价格文件、凭据和本机状态不进入源码包。
+  缺失或过期审核会失败关闭；不自动续期，也不声称已核对服务商账单。
+- 本机通过 200 项 Python、7 项 Node 测试；本阶段无需付费模型调用。
+
 Future changes will be listed here. / 后续变更将在此记录。
+
+## v0.16.0 — 2026-11-15 — Auditable pricing lifecycle / 可审计价格生命周期
+
+### English
+
+- M8.4 adds owner-reviewed, hash-addressed price versions for new model calls,
+  with explicit UTC validity, endpoint/model binding, immutable per-call snapshots
+  and gateway version fencing.
+- New model-backed delivery/runtime template v2 carries the pricing adapter while
+  keeping price files, credentials and local state outside source exports. Missing or
+  expired reviews fail closed; no automatic renewal or invoice verification is claimed.
+- 200 Python tests and seven Node tests pass locally; this milestone used no paid model call.
+
+### 简体中文
+
+- M8.4 为新的模型调用加入所有者审核、哈希寻址的价格版本，支持明确 UTC 有效期、端点/模型
+  绑定、每次调用不可变快照和网关版本防切换。
+- 新模型交付/运行时模板 v2 携带价格适配器，但价格文件、凭据和本机状态不进入源码包。缺失
+  或过期审核会失败关闭；不自动续期，也不声称已核对服务商账单。
+- 本机通过 200 项 Python、7 项 Node 测试；本阶段无需付费模型调用。
 
 ## v0.15.0 — 2026-11-15 — Container runtime portability / 容器运行环境无关
 

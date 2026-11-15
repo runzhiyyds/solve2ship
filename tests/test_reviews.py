@@ -162,7 +162,7 @@ class ReviewTests(unittest.TestCase):
             self.assertEqual(db.execute('SELECT count(*) FROM final_quarantine').fetchone()[0], 4)
             self.assertEqual(db.execute('SELECT count(*) FROM delivery_reports').fetchone()[0], 1)
         with self.assertRaisesRegex(BudgetError, 'delivery_not_active'):
-            self.searches.ledger.reserve('delivery:' + delivery['id'], 'forbidden-replay', 'deepseek-flash', 32)
+            self.searches.ledger.reserve('delivery:' + delivery['id'], 'forbidden-replay', 'deepseek-flash', 32, allow_fixture=True)
         with self.assertRaisesRegex(SearchError, 'final_test_consumed'):
             self.searches.evolve(self.run['id'], self.run['selection']['candidate_id'], uuid.uuid4().hex)
         with self.assertRaisesRegex(DeliveryError, 'frozen_quality_mode_conflict'):
@@ -318,7 +318,7 @@ class ReviewTests(unittest.TestCase):
 
     def test_schema13_migration_preserves_records_and_adds_append_only_review_tables(self):
         self.searches.ledger.configure('migration-review-protocol', 10 * MICRO)
-        call_id = self.searches.ledger.reserve('migration-review-protocol', 'explicit_fixture_unknown_charge', 'deepseek-flash', 32)
+        call_id = self.searches.ledger.reserve('migration-review-protocol', 'explicit_fixture_unknown_charge', 'deepseek-flash', 32, allow_fixture=True)
         before = self.searches.ledger.status()['committed_ceiling_cny']
         with self.store.connection(write=True) as db:
             db.execute('DROP TABLE delivery_quality_decisions')

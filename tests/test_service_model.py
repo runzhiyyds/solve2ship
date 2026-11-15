@@ -119,7 +119,7 @@ class ServiceModelTests(unittest.TestCase):
         with patch('solve2ship.delivery.ModelGateway',side_effect=AssertionError('Never replay')):
             self.assertEqual(DeliveryRepository(store).prepare(delivery['search_id'],uuid.uuid4().hex)['report'],delivery['report'])
         with self.assertRaisesRegex(BudgetError,'delivery_not_active'):
-            repo.ledger.reserve('delivery:'+delivery['id'],'forbidden','deepseek-flash',32)
+            repo.ledger.reserve('delivery:'+delivery['id'],'forbidden','deepseek-flash',32,allow_fixture=True)
 
     def test_delegated_allowance_is_atomic_idempotent_and_counts_in_global_root_budget(self):
         store,repo,delivery=self.final_source()
