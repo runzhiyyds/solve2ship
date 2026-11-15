@@ -93,7 +93,7 @@ In one small synthetic Chinese routing task, the owner accepted four real final
 outputs. The unchanged Rules artifact then passed independent local HTTP and
 source-ZIP/container checks. No new model calls, claimed accuracy or final-data
 retuning. The design question is how to make user judgment useful without pretending
-it is certified truth. [Evidence and limitations](releases/v0.14.0.md).
+it is certified truth. [Evidence and limitations](releases/v0.15.0.md).
 
 **传播草稿，尚未发布。** 没有标签的任务如何交付？Solve2Ship 先冻结方案，再展示最终
 输出，让使用者直接判断具体结果，并把意见与自动评分分开记录。一个小型合成中文

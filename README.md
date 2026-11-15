@@ -10,7 +10,7 @@
 
 A task may need rules, a short Python program, a trained model, a prompt or a tool-using workflow. STS treats these as competing approaches. It selects using the available quality evidence, measured inference cost and latency; an agent does not receive a preference for being an agent.
 
-**v0.14.0 engineering preview · [Apache-2.0](LICENSE).** The current implementation runs locally and supports a bounded set of candidate families. The complete autonomous engineering platform remains a development goal.
+**v0.15.0 engineering preview · [Apache-2.0](LICENSE).** The current implementation runs locally and supports a bounded set of candidate families. The complete autonomous engineering platform remains a development goal.
 
 ## How Goal-to-Service works
 
@@ -95,7 +95,7 @@ For an unlabeled Chinese routing task, the owner reviewed and accepted all four
 once-only final outputs from the selected Rules candidate. Its private service and
 exported ZIP each passed six serving-equivalence HTTP cases. This is self-attested
 acceptance of a small synthetic case, not measured business accuracy. See the
-[v0.14 release evidence](docs/releases/v0.14.0.md).
+[v0.15 release evidence](docs/releases/v0.15.0.md).
 
 ## Documentation
 

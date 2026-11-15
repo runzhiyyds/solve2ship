@@ -1,6 +1,10 @@
 # Changelog / 版本变动
 
-## Unreleased — Container runtime portability / 容器运行环境无关
+## Unreleased / 未发布
+
+Future changes will be listed here. / 后续变更将在此记录。
+
+## v0.15.0 — 2026-11-15 — Container runtime portability / 容器运行环境无关
 
 ### English
 
