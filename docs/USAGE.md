@@ -21,11 +21,46 @@ future work, not already-submitted provider charges. Unknown charges are not ret
 
 ## Optional isolated execution
 
-Rules/Prompt/Hybrid need no Docker. Generated Python and numeric ML require Docker
-Desktop/Engine on this development machine, a reviewed immutable Linux image and
-fresh local activation. The catalog's currently reviewed images are linux/arm64;
+Rules/Prompt/Hybrid need no Docker. Generated Python and numeric ML require a local
+Docker Engine, a reviewed immutable Linux image and fresh local activation. STS is
+container-runtime agnostic: on macOS Apple Silicon use Colima with its Docker Engine
+and the standard Docker CLI/context; on Linux or a cloud VM use the host Docker
+Engine. Docker Desktop, its application bundle and its private socket paths are not
+required or detected. The catalog's currently reviewed images are linux/arm64;
 other platforms need their own digest/dependency acceptance. No runtime binary/image
 is included in the repository.
+
+### Configure a local container runtime
+
+The control plane follows the standard Docker endpoint selection used by the Docker
+CLI: `DOCKER_CONTEXT` takes precedence over `DOCKER_HOST`, followed by the current
+context in `DOCKER_CONFIG/config.json`. Only local Unix-socket endpoints are
+accepted; TCP, SSH and named-pipe endpoints fail closed. This keeps execution
+independent of the runtime provider and avoids a fixed application path.
+
+On macOS Apple Silicon, install Colima, Docker CLI and Compose with your package
+manager, then start the Docker runtime and select its context:
+
+```sh
+brew install colima docker docker-compose
+colima start --runtime docker --arch aarch64
+docker context use colima
+docker version
+```
+
+On Linux, install Docker Engine, Docker CLI and the Compose plugin from the
+distribution's official instructions, then verify:
+
+```sh
+docker context show
+docker version
+docker compose version
+```
+
+If the selected context changes, run the isolation verifier again. The accepted
+runtime endpoint is recorded in local evidence and a previously activated profile
+must be reviewed after an Engine or endpoint change. Use `make check-docker` for the
+real isolation probes; it never falls back to executing generated code on the host.
 
 Pull the exact Python image reference from dependencies.json using your installed
 Docker CLI, then run:
@@ -101,7 +136,11 @@ authorization. Model checks and local compute estimates are not provider invoice
 明文凭据、用量和缓存，请放在源码之外并保留，不能靠删除状态清零。每项付费操作必须
 保存一个 32 位小写十六进制 request_id；成功重复请求不再计费，失败/中断编号返回 409，
 不会自动重试。项目内划拨额度继续占用原全局/整树预算，未用部分不自动退回。不要将
-本机开发 HTTP 服务当作生产托管。
+本机开发 HTTP 服务当作生产托管。容器运行环境不绑定 Docker Desktop：Apple Silicon
+macOS 使用 Colima + Docker Engine + CLI/Compose，Linux/云主机使用 Docker Engine +
+Compose。STS 按 Docker CLI 的 `DOCKER_CONTEXT`/`DOCKER_HOST`/配置文件选择本地 Unix
+套接字，拒绝 TCP/SSH/命名管道和宿主执行回退。切换上下文或 Engine 后须重新运行隔离
+验收。
 
 
 ## Experimental tool-use candidates / 实验性工具调用方案

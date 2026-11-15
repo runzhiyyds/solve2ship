@@ -65,6 +65,15 @@ PYTHONPATH=src python3 -m solve2ship model-status
 
 规则/Prompt/混合方案不需要 Docker；Python、数值 ML、工作流和工具调用方案需要本机运行验收。准备环境、导出与独立模型服务配置见[使用说明](docs/USAGE.md)。
 
+### 容器运行环境
+
+STS 仍将生成代码放在 Docker 容器中执行，同时不绑定某个容器发行版。Apple Silicon
+macOS 使用 Colima + Docker Engine + Docker CLI/Compose；Linux 或云主机使用 Docker
+Engine + Compose。STS 按 Docker CLI 的 `DOCKER_CONTEXT`、`DOCKER_HOST` 和
+`DOCKER_CONFIG` 选择本地 Unix 套接字，只接受本地套接字，不需要 Docker Desktop.app
+或 Desktop 专用套接字路径。切换上下文或 Engine 后，重新运行
+`python3 scripts/verify_docker.py --activate`，再启用隔离候选方案。
+
 ### 试一个自然语言目标
 
 将[订单输入样本](examples/receipt-inputs.json)和[中文期望输出](examples/receipt-outcome.zh-CN.txt)粘贴到 Studio：从日常订单备注中理解商品、数量与优惠，精确返回整数分金额。你定义期望，规划器提出实现方式。
@@ -75,7 +84,7 @@ PYTHONPATH=src python3 -m solve2ship model-status
 
 ## 保留成功，也保留失败
 
-v0.14.0 在安装可选结构校验依赖后通过 **178 项 Python、7 项前端测试**；基础环境明确跳过 11 项依赖校验引擎的测试。协议夹具与真实模型/运行验收分开记录。
+当前测试套件通过 **183 项 Python、7 项前端测试**；基础环境明确跳过 11 项可选结构校验引擎测试。协议夹具与真实模型/运行验收分开记录。
 
 无标签中文路由任务中，项目所有者实际复核并接受所选规则方案的四条一次性最终输出；
 私有服务及导出 ZIP 各通过六条服务一致性 HTTP 检查。这是小型合成案例的用户接受，

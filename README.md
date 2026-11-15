@@ -65,6 +65,16 @@ Replace `YOUR_APPROVED_LIMIT` with your own cumulative authorization. Enter the 
 
 Rules/Prompt/Hybrid do not require Docker. Python, numeric ML, workflows and tool-use agents require machine-specific runtime acceptance. The [usage guide](docs/USAGE.md) covers setup, supported delivery and independent service configuration.
 
+### Container runtime support
+
+STS keeps generated-code execution inside Docker containers while remaining
+container-runtime agnostic. On Apple Silicon macOS, use Colima + Docker Engine +
+Docker CLI/Compose; on Linux or a cloud VM, use Docker Engine + Compose. STS follows
+the Docker CLI's `DOCKER_CONTEXT`, `DOCKER_HOST` and `DOCKER_CONFIG` selection and
+accepts local Unix sockets only. It does not require Docker Desktop.app or a
+Desktop-specific socket path. After changing the selected context or Engine, rerun
+`python3 scripts/verify_docker.py --activate` before enabling isolated candidates.
+
 ### Try an outcome
 
 Paste [the receipt inputs](examples/receipt-inputs.json) and [the Chinese outcome description](examples/receipt-outcome.zh-CN.txt) into Studio. The goal asks for item count and exact integer-cent totals from ordinary order notes. You supply the desired behavior; the planner proposes how to produce it.
@@ -75,7 +85,7 @@ Prefer a local coding agent? The companion **[sts-skills](https://github.com/run
 
 ## Evidence, including failures
 
-The v0.14.0 suite has **178 Python tests and seven Node tests** with the optional schema dependencies installed; base stdlib checks explicitly skip 11 schema-engine tests. Protocol fixtures are separate from real model and runtime acceptance.
+The current suite has **183 Python tests and seven Node tests**; base stdlib checks explicitly skip 11 optional schema-engine tests. Protocol fixtures are separate from real model and runtime acceptance.
 
 In one small synthetic Chinese task, a tool-use agent selected the intended fee/date tools but returned the wrong final output shape. One measured edit still matched **0/6 validation labels**. The simpler Python candidate matched **6/6**, remained selected and passed **4/4 once-only final labels**, followed by six independent HTTP cases from both its private and exported service bundles. These are provided-label matches, not verified business accuracy or a general ranking of approaches.
 

@@ -1,6 +1,7 @@
 """Actual Docker isolation checks and explicit local adapter activation."""
 
 import argparse
+from datetime import date
 import hashlib
 import json
 import os
@@ -77,7 +78,8 @@ def verify(image=None):
  return {'python':platform.python_version(),'debian_packages':packages,'copyright_files':[{'path':str(p),'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in pathlib.Path('/usr/share/doc').glob('*/copyright') if p.is_file()]}
 ''',None)
     receipts.append(sandbox.receipt())
-    return {'review_date':'2026-11-08','status':'passed','policy':POLICY_VERSION,'engine':environment,
+    review_date = date.today().isoformat()
+    return {'review_date':review_date,'status':'passed','policy':POLICY_VERSION,'engine':environment,
             'image':image,'facts':facts,'limit_failures_observed':errors,'receipts':receipts,
             'host_execution_fallback':False,'public_multi_tenant_security_certified':False}, inventory
 
@@ -93,7 +95,7 @@ def main():
         if path.is_file():os.chmod(path,0o600)
     if args.activate:
         config={'policy':POLICY_VERSION,'image':evidence['image'],'isolation_checks_passed':True,
-                'acceptance_sha256':hashlib.sha256(json.dumps(evidence,sort_keys=True).encode()).hexdigest(),'review_date':'2026-11-08',
+                'acceptance_sha256':hashlib.sha256(json.dumps(evidence,sort_keys=True).encode()).hexdigest(),'review_date':evidence['review_date'],
                 'runner_sha256':hashlib.sha256((ROOT/'runtimes/python/runner.py').read_bytes()).hexdigest(),
                 'adapter_sha256':hashlib.sha256((ROOT/'src/solve2ship/docker_runtime.py').read_bytes()).hexdigest()}
         path=ROOT/'.sts/sandbox.json'

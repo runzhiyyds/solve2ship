@@ -29,8 +29,16 @@ def verify(store,delivery_id,service_grant_id=None):
     local_http=build_opener(ProxyHandler({}))
     if not export['archive_integrity_verified']:
         raise AssertionError('export_archive_changed')
-    docker=shutil.which('docker') or '/Applications/Docker.app/Contents/Resources/bin/docker'
-    environment=os.environ.copy();environment['PATH']=str(Path(docker).parent)+':'+environment.get('PATH','')
+    docker=shutil.which('docker')
+    if not docker:
+        raise RuntimeError(
+            'docker_cli_unavailable: install Docker CLI and configure a local Docker Engine '
+            '(Colima on macOS or Docker Engine on Linux)'
+        )
+    # Docker CLI discovery follows PATH.  The verifier does not know or assume
+    # a vendor application bundle; context/host selection remains the CLI's
+    # standard environment/configuration contract.
+    environment=os.environ.copy()
     # Never place credentials/task data in CLI arguments or build context.
     def command(*arguments):
         return subprocess.run([docker,*arguments],env=environment,check=True,capture_output=True,text=True,timeout=120).stdout.strip()

@@ -1,5 +1,29 @@
 # Changelog / 版本变动
 
+## Unreleased — Container runtime portability / 容器运行环境无关
+
+### English
+
+- Removed Docker Desktop-specific endpoint discovery from the Engine adapter and
+  export verifier. Local Docker contexts and Unix sockets selected by the standard
+  Docker CLI contract now work with Colima on Apple Silicon and Docker Engine on
+  Linux/cloud.
+- Remote TCP/SSH/named-pipe endpoints fail closed; reviewed runtime profiles bind the
+  selected endpoint fingerprint and require fresh isolation evidence after a context
+  or Engine change. Existing Dockerfile/image and container-only execution policy are
+  unchanged.
+- Added bilingual setup guidance and an M8.3 acceptance record. No Docker image,
+  runtime binary or cloud resource is bundled or published.
+
+### 简体中文
+
+- 移除 Docker Desktop 专用的端点发现与导出回退路径。Engine 适配器按 Docker CLI
+  标准上下文和本地 Unix 套接字工作，支持 Apple Silicon 上的 Colima 以及 Linux/云主机
+  的 Docker Engine。
+- TCP/SSH/命名管道端点会在执行前失败关闭；验收配置绑定端点指纹，切换上下文或
+  Engine 后必须重新完成隔离验收。现有 Dockerfile/镜像与容器隔离策略保持不变。
+- 新增双语环境说明和 M8.3 验收记录；不捆绑或发布 Docker 镜像、运行时二进制或云资源。
+
 ## v0.14.0 — 2026-11-10 — Operator review / 操作者复核
 
 ### English

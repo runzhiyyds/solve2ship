@@ -11,7 +11,7 @@ import os
 import threading
 import time
 import uuid
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from .contracts import SandboxUnavailable, canonical_json, sha256, strict_json_loads, validate_json
 
@@ -40,9 +40,133 @@ class UnixHTTPConnection(http.client.HTTPConnection):
         self.sock.connect(self.path)
 
 
+def _safe_json_file(path, *, maximum=262144):
+    """Read local Docker metadata without following links or exposing contents.
+
+    Docker CLI creates ``config.json`` and context metadata with ordinary
+    owner-readable permissions (often 0644).  We accept those files when they
+    are owned by the current user and cannot be modified by group/other users;
+    secrets are parsed only for endpoint selection and never returned.
+    """
+    descriptor = None
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        info = os.fstat(descriptor)
+        if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid()
+                or info.st_mode & 0o022 or info.st_size > maximum):
+            raise DockerError('untrusted_docker_configuration')
+        with os.fdopen(descriptor, 'rb') as handle:
+            descriptor = None
+            raw = handle.read(maximum + 1)
+        if len(raw) > maximum:
+            raise DockerError('docker_configuration_too_large')
+        value = json.loads(raw)
+        if type(value) is not dict:
+            raise DockerError('invalid_docker_configuration')
+        return value
+    except DockerError:
+        raise
+    except (OSError, ValueError, UnicodeError) as error:
+        raise DockerError('docker_configuration_unavailable') from error
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _docker_config_dir():
+    configured = os.environ.get('DOCKER_CONFIG')
+    return Path(configured).expanduser() if configured else Path.home() / '.docker'
+
+
+def _local_socket_uri(value):
+    """Normalize a local Unix endpoint and reject remote Docker transports."""
+    if not isinstance(value, str) or not value or len(value) > 4096:
+        raise DockerError('unsupported_docker_endpoint')
+    parsed = urlsplit(value)
+    if parsed.scheme != 'unix' or parsed.netloc or parsed.query or parsed.fragment or parsed.username or parsed.password:
+        raise DockerError('unsupported_docker_endpoint')
+    path = parsed.path
+    if not path.startswith('/') or any(part == '..' for part in Path(path).parts):
+        raise DockerError('unsupported_docker_endpoint')
+    return 'unix://' + path, path
+
+
+def _context_endpoint(config_dir, context_name):
+    if context_name == 'default':
+        return 'unix:///var/run/docker.sock', None
+    metadata_root = config_dir / 'contexts' / 'meta'
+    try:
+        entries = list(metadata_root.iterdir())
+    except OSError as error:
+        raise DockerError('docker_context_unavailable') from error
+    matches = []
+    for entry in entries[:256]:
+        try:
+            info = entry.lstat()
+            if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o022:
+                continue
+            metadata = _safe_json_file(entry / 'meta.json')
+        except DockerError:
+            continue
+        if metadata.get('Name') == context_name:
+            matches.append(metadata)
+    if len(matches) != 1:
+        raise DockerError('docker_context_unavailable')
+    endpoint = ((matches[0].get('Endpoints') or {}).get('docker') or {}).get('Host')
+    return _local_socket_uri(endpoint)[0], _local_socket_uri(endpoint)[1]
+
+
+def resolve_docker_endpoint(socket_path=None):
+    """Resolve the same local endpoint selection model as Docker CLI.
+
+    Explicit settings fail closed. We never invoke Docker CLI or rely on a
+    Docker Desktop path; Colima and Linux Engine are selected through the
+    normal Docker context/host configuration.
+    """
+    source, context_name, uri = None, None, None
+    if socket_path is not None:
+        path = Path(socket_path).expanduser()
+        if not path.is_absolute():
+            raise DockerError('unsupported_docker_endpoint')
+        uri, path = _local_socket_uri('unix://' + str(path))
+        source = 'explicit_socket'
+    else:
+        context_env = os.environ.get('DOCKER_CONTEXT')
+        host_env = os.environ.get('DOCKER_HOST')
+        config_dir = _docker_config_dir()
+        if context_env:
+            context_name = context_env
+            uri, path = _context_endpoint(config_dir, context_name)
+            source = 'docker_context_env'
+        elif host_env:
+            uri, path = _local_socket_uri(host_env)
+            source = 'docker_host_env'
+        else:
+            config_path = config_dir / 'config.json'
+            try:
+                config = _safe_json_file(config_path)
+            except DockerError as error:
+                if error.args and error.args[0] == 'docker_configuration_unavailable' and not config_path.exists():
+                    config = {}
+                else:
+                    raise
+            context_name = config.get('currentContext') or 'default'
+            if not isinstance(context_name, str) or not context_name:
+                raise DockerError('invalid_docker_configuration')
+            uri, path = _context_endpoint(config_dir, context_name)
+            source = 'docker_config_context' if context_name != 'default' else 'default_socket'
+    return {'uri': uri, 'socket_path': path, 'source': source, 'context_name': context_name,
+            'endpoint_sha256': hashlib.sha256(uri.encode()).hexdigest()}
+
+
 class DockerEngine:
     def __init__(self, socket_path=None):
-        self.socket_path = str(socket_path or Path.home()/'.docker/run/docker.sock')
+        endpoint = resolve_docker_endpoint(socket_path)
+        self.socket_path = endpoint['socket_path']
+        self.endpoint_uri = endpoint['uri']
+        self.endpoint_source = endpoint['source']
+        self.context_name = endpoint['context_name']
+        self.endpoint_sha256 = endpoint['endpoint_sha256']
 
     def request(self, method, path, body=None, *, raw=False, limit=1048576, content_type='application/json', timeout=5):
         try:
@@ -72,7 +196,9 @@ class DockerEngine:
         if version.get('Os') != 'linux' or not any('seccomp' in value for value in security):
             raise DockerError('docker_security_policy_unavailable')
         return {'available': True, 'engine_version': version['Version'], 'architecture': version['Arch'],
-                'security_options': security, 'remote_engine_allowed': False}
+                'security_options': security, 'remote_engine_allowed': False,
+                'endpoint_uri': self.endpoint_uri, 'endpoint_source': self.endpoint_source,
+                'context_name': self.context_name, 'endpoint_sha256': self.endpoint_sha256}
 
 
 def approved_image(root=ROOT):
@@ -97,6 +223,7 @@ class DockerSandbox:
         self.image, self.engine, self.timeout = image, engine or DockerEngine(), timeout
         self.local = threading.local()
         self.accepted_engine_version = None
+        self.accepted_endpoint_sha256 = None
         self.stop = None
         self.runtime_root = Path(runtime_root)
 
@@ -120,6 +247,8 @@ class DockerSandbox:
         status = self.engine.status()
         if self.accepted_engine_version and status['engine_version'] != self.accepted_engine_version:
             raise DockerError('sandbox_engine_review_required')
+        if self.accepted_endpoint_sha256 and status.get('endpoint_sha256') != self.accepted_endpoint_sha256:
+            raise DockerError('sandbox_endpoint_review_required')
         runner = (self.runtime_root/'runtimes/python/runner.py').read_text()
         nonce = uuid.uuid4().hex
         config = {'Image': self.image, 'Cmd': ['python3', '-I', '-S', '-B', '-u', '-c', runner],
@@ -192,6 +321,9 @@ class DockerSandbox:
                 self.local.receipt = {'provider': 'docker_local', 'policy': POLICY_VERSION,
                     'container_id': identifier, 'image': self.image, 'source_sha256': sha256(source),
                     'engine_version': status['engine_version'],
+                    'endpoint_sha256': status.get('endpoint_sha256'),
+                    'endpoint_source': status.get('endpoint_source'),
+                    'context_name': status.get('context_name'),
                     'wall_time_ms': (time.monotonic()-started)*1000, 'error': error,
                     'container_removed': removed, 'host_mounts': False, 'network': 'none',
                     'non_root': True, 'memory_bytes': 268435456, 'cpu_limit': .5, 'pid_limit': 16,
@@ -220,4 +352,7 @@ def configured_sandbox(path):
         raise DockerError('sandbox_acceptance_requires_review')
     sandbox = DockerSandbox(config['image'])
     sandbox.accepted_engine_version = evidence['engine']['engine_version']
+    if not evidence['engine'].get('endpoint_sha256'):
+        raise DockerError('sandbox_acceptance_requires_review')
+    sandbox.accepted_endpoint_sha256 = evidence['engine']['endpoint_sha256']
     return sandbox

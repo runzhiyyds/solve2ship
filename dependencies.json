@@ -55,13 +55,52 @@
       "notes": "Test tooling only; additional incorporated notices apply"
     },
     {
-      "name": "Docker Desktop",
-      "version": "4.98.0 (245422)",
-      "engine_version": "29.9.2",
-      "license": "Docker Subscription Service Agreement; incorporated components retain their individual licenses",
-      "source": "https://docs.docker.com/subscription/desktop-license/",
+      "name": "Docker Engine API",
+      "version": "API 1.45 adapter contract; engine version host-dependent",
+      "license": "Apache-2.0 for the STS adapter; Docker Engine components retain upstream notices",
       "bundled": false,
-      "notes": "Owner-installed local runtime; no Desktop binary redistributed. Engine API v1.45 over local Unix socket; actual engine supports v1.56."
+      "source": "https://docs.docker.com/engine/api/",
+      "notes": "STS uses a stdlib HTTP client over a local Unix socket. Colima and native Linux Docker Engine are selected through Docker CLI context/configuration; remote TCP/SSH endpoints are rejected and the control plane never invokes Docker CLI subprocesses."
+    },
+    {
+      "name": "Colima",
+      "version": "0.10.3",
+      "license": "MIT",
+      "bundled": false,
+      "source": "https://github.com/abiosoft/colima/releases/tag/v0.10.3",
+      "notes": "macOS Apple Silicon development runtime target; provides a local Docker Engine socket through the standard colima Docker context. Install separately; no binary is bundled."
+    },
+    {
+      "name": "Lima",
+      "version": "2.3.0",
+      "license": "MIT",
+      "bundled": false,
+      "source": "https://github.com/lima-vm/lima/releases/tag/v2.3.0",
+      "notes": "Colima virtualization dependency; install separately through the selected package manager. No binary is bundled."
+    },
+    {
+      "name": "Docker CLI",
+      "version": "29.9.3",
+      "license": "Apache-2.0 plus incorporated notices",
+      "bundled": false,
+      "source": "https://github.com/docker/cli/releases/tag/v29.9.3",
+      "notes": "Operator tooling for context, image and Compose commands. STS product code does not use a CLI subprocess for sandbox execution."
+    },
+    {
+      "name": "Docker Compose",
+      "version": "5.7.1",
+      "license": "Apache-2.0 plus incorporated notices",
+      "bundled": false,
+      "source": "https://github.com/docker/compose/releases/tag/v5.7.1",
+      "notes": "Optional operator tooling for local multi-container development. STS does not require vendor-specific Compose behavior."
+    },
+    {
+      "name": "Docker Buildx",
+      "version": "0.39.0",
+      "license": "Apache-2.0 plus incorporated notices",
+      "bundled": false,
+      "source": "https://github.com/docker/buildx/releases/tag/v0.39.0",
+      "notes": "Optional operator tooling for image builds; no plugin binary is bundled or redistributed by STS."
     }
   ],
   "copyright_holder": "郭辰远 (Chenyuan Guo)",

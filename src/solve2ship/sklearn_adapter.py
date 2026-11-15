@@ -127,4 +127,8 @@ def configured_ml_sandbox(path):
         raise DockerError('ml_acceptance_requires_review')
     sandbox=DockerSandbox(config['image'],timeout=10)
     sandbox.accepted_engine_version=config['engine_version']
+    endpoint_sha256 = evidence.get('isolation', {}).get('engine', {}).get('endpoint_sha256')
+    if not endpoint_sha256:
+        raise DockerError('ml_acceptance_requires_review')
+    sandbox.accepted_endpoint_sha256=endpoint_sha256
     return sandbox
